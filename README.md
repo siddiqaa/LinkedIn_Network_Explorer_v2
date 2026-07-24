@@ -2,6 +2,8 @@
 
 A fast, privacy-first dashboard for exploring and analyzing your LinkedIn network. Upload your LinkedIn `Connections.csv` or load the built-in sample dataset to instantly visualize network growth, company distribution, job seniority, and position trends — 100% client-side with no data leaving your browser.
 
+**Live Deployment:** [https://linkedin-network-explorer.vercel.app/](https://linkedin-network-explorer.vercel.app/)
+
 | | | | |
 |---|---|---|---|
 | ![Dashboard preview 1](/screenshots/Screenshot%202026-05-16%206.02.59%20PM.png) | ![Dashboard preview 2](/screenshots/Screenshot%202026-05-16%206.03.09%20PM.png) | ![Dashboard preview 3](/screenshots/Screenshot%202026-05-16%206.03.15%20PM.png) | ![Dashboard preview 4](/screenshots/Screenshot%202026-05-16%206.03.20%20PM.png) |
