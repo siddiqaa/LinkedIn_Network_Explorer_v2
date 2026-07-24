@@ -1,0 +1,8 @@
+{
+  "name": "LinkedIn Network Explorer",
+  "description": "Explore and visualize LinkedIn connection export CSV data with interactive charts and analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
