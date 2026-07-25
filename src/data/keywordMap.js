@@ -5,6 +5,13 @@
  */
 
 export const KEYWORD_MAP = [
+  // Retired
+  {
+    seniority: "Retired",
+    keywords: [
+      "retired", "retiree", "emeritus", "pensioner", "former", "ex-", "ex ", "semi-retired", "semiretired", "at leisure", "enjoying life"
+    ]
+  },
   // C-Suite / Founder
   {
     seniority: "C-Suite / Founder",
@@ -54,19 +61,22 @@ export function classifyByKeyword(title) {
   if (!title || typeof title !== "string") return null;
 
   const cleanTitle = title.toLowerCase();
+  let bestMatch = null;
 
   for (const group of KEYWORD_MAP) {
     for (const kw of group.keywords) {
       const escapedKw = kw.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
       const regex = new RegExp(`(?:^|[^a-z0-9])${escapedKw}(?:$|[^a-z0-9])`, 'i');
       if (regex.test(cleanTitle)) {
-        return {
-          seniority: group.seniority,
-          keyword: kw
-        };
+        if (!bestMatch || kw.length > bestMatch.keyword.length) {
+          bestMatch = {
+            seniority: group.seniority,
+            keyword: kw
+          };
+        }
       }
     }
   }
 
-  return null;
+  return bestMatch;
 }

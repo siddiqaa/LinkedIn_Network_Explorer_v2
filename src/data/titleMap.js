@@ -779,11 +779,11 @@ export const TITLE_MAP = {
   },
   "retired": {
     "canonicalTitle": "Retired",
-    "seniority": "Unknown / Other"
+    "seniority": "Retired"
   },
   "semi retired": {
     "canonicalTitle": "Retired",
-    "seniority": "Unknown / Other"
+    "seniority": "Retired"
   },
   "self employed": {
     "canonicalTitle": "Freelancer",
@@ -1341,515 +1341,578 @@ export const TITLE_MAP = {
     "canonicalTitle": "VP Sales",
     "seniority": "VP / Director"
   },
-  
-"Founder": {
-"canonicalTitle": "Founder",
-"seniority": "C-Suite / Founder"
-},
-"Retired": {
-"canonicalTitle": "Retired",
-"seniority": "Unknown / Other"
-},
-"Chief Operating Officer": {
-"canonicalTitle": "Chief Operating Officer",
-"seniority": "C-Suite / Founder"
-},
-"General Manager": {
-"canonicalTitle": "General Manager",
-"seniority": "Manager / Lead"
-},
-"Chief Executive Officer": {
-"canonicalTitle": "Chief Executive Officer",
-"seniority": "C-Suite / Founder"
-},
-"President": {
-"canonicalTitle": "President",
-"seniority": "C-Suite / Founder"
-},
-"Owner": {
-"canonicalTitle": "Owner",
-"seniority": "C-Suite / Founder"
-},
-"Managing Director": {
-"canonicalTitle": "Managing Director",
-"seniority": "VP / Director"
-},
-"Partner": {
-"canonicalTitle": "Partner",
-"seniority": "VP / Director"
-},
-"Founder & CEO": {
-"canonicalTitle": "CEO & Founder",
-"seniority": "C-Suite / Founder"
-},
-"Project Manager": {
-"canonicalTitle": "Project Manager",
-"seniority": "Manager / Lead"
-},
-"CEO": {
-"canonicalTitle": "Chief Executive Officer",
-"seniority": "C-Suite / Founder"
-},
-"Co-Founder": {
-"canonicalTitle": "Co-Founder",
-"seniority": "C-Suite / Founder"
-},
-"Managing Partner": {
-"canonicalTitle": "Managing Partner",
-"seniority": "C-Suite / Founder"
-},
-"Director": {
-"canonicalTitle": "Director",
-"seniority": "VP / Director"
-},
-"Vice President": {
-"canonicalTitle": "Vice President",
-"seniority": "VP / Director"
-},
-"Sales Manager": {
-"canonicalTitle": "Sales Manager",
-"seniority": "Manager / Lead"
-},
-"General Sales Manager": {
-"canonicalTitle": "Sales Manager",
-"seniority": "Manager / Lead"
-},
-"Senior Project Manager": {
-"canonicalTitle": "Senior Project Manager",
-"seniority": "Manager / Lead"
-},
-"Principal": {
-"canonicalTitle": "Principal",
-"seniority": "Senior / Mid"
-},
-"Senior Software Engineer": {
-"canonicalTitle": "Senior Software Engineer",
-"seniority": "Senior / Mid"
-},
-"Software Engineer": {
-"canonicalTitle": "Software Engineer",
-"seniority": "Senior / Mid"
-},
-"Chief Technology Officer": {
-"canonicalTitle": "Chief Technology Officer",
-"seniority": "C-Suite / Founder"
-},
-"Account Executive": {
-"canonicalTitle": "Account Executive",
-"seniority": "Senior / Mid"
-},
-"Product Manager": {
-"canonicalTitle": "Product Manager",
-"seniority": "Manager / Lead"
-},
-"Senior Product Manager": {
-"canonicalTitle": "Senior Product Manager",
-"seniority": "Manager / Lead"
-},
-"Consultant": {
-"canonicalTitle": "Consultant",
-"seniority": "Senior / Mid"
-},
-"Senior Consultant": {
-"canonicalTitle": "Senior Consultant",
-"seniority": "Senior / Mid"
-},
-"Founder and CEO": {
-"canonicalTitle": "CEO & Founder",
-"seniority": "C-Suite / Founder"
-},
-"Executive Director": {
-"canonicalTitle": "Executive Director",
-"seniority": "VP / Director"
-},
-"Business Development Manager": {
-"canonicalTitle": "Business Development Manager",
-"seniority": "Manager / Lead"
-},
-"Board Member": {
-"canonicalTitle": "Board Member",
-"seniority": "C-Suite / Founder"
-},
-"Principal Consultant": {
-"canonicalTitle": "Principal Consultant",
-"seniority": "Senior / Mid"
-},
-"Co-Founder & CEO": {
-"canonicalTitle": "CEO & Co-Founder",
-"seniority": "C-Suite / Founder"
-},
-"Account Manager": {
-"canonicalTitle": "Account Manager",
-"seniority": "Manager / Lead"
-},
-"Project Director": {
-"canonicalTitle": "Project Director",
-"seniority": "VP / Director"
-},
-"Director of Operations": {
-"canonicalTitle": "Director of Operations",
-"seniority": "VP / Director"
-},
-"CEO and Founder": {
-"canonicalTitle": "CEO & Founder",
-"seniority": "C-Suite / Founder"
-},
-"Senior Recruiter": {
-"canonicalTitle": "Senior Recruiter",
-"seniority": "Senior / Mid"
-},
-"Chief Operations Officer": {
-"canonicalTitle": "Chief Operating Officer",
-"seniority": "C-Suite / Founder"
-},
-"Chief Marketing Officer": {
-"canonicalTitle": "Chief Marketing Officer",
-"seniority": "C-Suite / Founder"
-},
-"Chief Product Officer": {
-"canonicalTitle": "Chief Product Officer",
-"seniority": "C-Suite / Founder"
-},
-"Sales Director": {
-"canonicalTitle": "Sales Director",
-"seniority": "VP / Director"
-},
-"Data Scientist": {
-"canonicalTitle": "Data Scientist",
-"seniority": "Senior / Mid"
-},
-"Attorney": {
-"canonicalTitle": "Attorney",
-"seniority": "Senior / Mid"
-},
-"Business Owner": {
-"canonicalTitle": "Business Owner",
-"seniority": "C-Suite / Founder"
-},
-"Machine Learning Engineer": {
-"canonicalTitle": "Machine Learning Engineer",
-"seniority": "Senior / Mid"
-},
-"Project Management Consultant": {
-"canonicalTitle": "Project Management Consultant",
-"seniority": "Senior / Mid"
-},
-"Senior Director": {
-"canonicalTitle": "Senior Director",
-"seniority": "VP / Director"
-},
-"Recruiter": {
-"canonicalTitle": "Recruiter",
-"seniority": "Senior / Mid"
-},
-"Chief Revenue Officer": {
-"canonicalTitle": "Chief Revenue Officer",
-"seniority": "C-Suite / Founder"
-},
-"Enterprise Account Executive": {
-"canonicalTitle": "Enterprise Account Executive",
-"seniority": "Senior / Mid"
-},
-"Regional Sales Manager": {
-"canonicalTitle": "Regional Sales Manager",
-"seniority": "Manager / Lead"
-},
-"CTO": {
-"canonicalTitle": "Chief Technology Officer",
-"seniority": "C-Suite / Founder"
-},
-"Engineering Manager": {
-"canonicalTitle": "Engineering Manager",
-"seniority": "Manager / Lead"
-},
-"Chief Revenue Officer (CRO)": {
-"canonicalTitle": "Chief Revenue Officer",
-"seniority": "C-Suite / Founder"
-},
-"Senior Talent Acquisition Specialist": {
-"canonicalTitle": "Senior Talent Acquisition Specialist",
-"seniority": "Senior / Mid"
-},
-"Senior Vice President": {
-"canonicalTitle": "Senior Vice President",
-"seniority": "VP / Director"
-},
-"Director of Business Development": {
-"canonicalTitle": "Director of Business Development",
-"seniority": "VP / Director"
-},
-"Founding Partner": {
-"canonicalTitle": "Founding Partner",
-"seniority": "C-Suite / Founder"
-},
-"Independent Consultant": {
-"canonicalTitle": "Independent Consultant",
-"seniority": "Senior / Mid"
-},
-"Vice President Operations": {
-"canonicalTitle": "VP of Operations",
-"seniority": "VP / Director"
-},
-"Operations Manager": {
-"canonicalTitle": "Operations Manager",
-"seniority": "Manager / Lead"
-},
-"President & CEO": {
-"canonicalTitle": "President & CEO",
-"seniority": "C-Suite / Founder"
-},
-"Chief Commercial Officer (CCO)": {
-"canonicalTitle": "Chief Commercial Officer",
-"seniority": "C-Suite / Founder"
-},
-"Assistant Professor": {
-"canonicalTitle": "Assistant Professor",
-"seniority": "Senior / Mid"
-},
-"Associate Professor": {
-"canonicalTitle": "Associate Professor",
-"seniority": "Senior / Mid"
-},
-"Regional Sales Director": {
-"canonicalTitle": "Regional Sales Director",
-"seniority": "VP / Director"
-},
-"Senior Technical Recruiter": {
-"canonicalTitle": "Senior Technical Recruiter",
-"seniority": "Senior / Mid"
-},
-"CEO and Co-founder": {
-"canonicalTitle": "CEO & Co-Founder",
-"seniority": "C-Suite / Founder"
-},
-"CEO & Co-Founder": {
-"canonicalTitle": "CEO & Co-Founder",
-"seniority": "C-Suite / Founder"
-},
-"Postdoctoral Researcher": {
-"canonicalTitle": "Postdoctoral Researcher",
-"seniority": "Junior / Associate"
-},
-"Director of Finance": {
-"canonicalTitle": "Director of Finance",
-"seniority": "VP / Director"
-},
-"Talent Acquisition Partner": {
-"canonicalTitle": "Talent Acquisition Partner",
-"seniority": "Senior / Mid"
-},
-"Project Controls Manager": {
-"canonicalTitle": "Project Controls Manager",
-"seniority": "Manager / Lead"
-},
-"Operating Partner": {
-"canonicalTitle": "Operating Partner",
-"seniority": "VP / Director"
-},
-"Vice President of Product Management": {
-"canonicalTitle": "VP of Product Management",
-"seniority": "VP / Director"
-},
-"Senior Program Manager": {
-"canonicalTitle": "Senior Program Manager",
-"seniority": "Manager / Lead"
-},
-"Sr. Recruiter": {
-"canonicalTitle": "Senior Recruiter",
-"seniority": "Senior / Mid"
-},
-"Adjunct Professor": {
-"canonicalTitle": "Adjunct Professor",
-"seniority": "Unknown / Other"
-},
-"Senior Process Engineer": {
-"canonicalTitle": "Senior Process Engineer",
-"seniority": "Senior / Mid"
-},
-"Founder/CEO": {
-"canonicalTitle": "CEO & Founder",
-"seniority": "C-Suite / Founder"
-},
-"Technical Program Manager": {
-"canonicalTitle": "Technical Program Manager",
-"seniority": "Manager / Lead"
-},
-"Sr. Project Manager": {
-"canonicalTitle": "Senior Project Manager",
-"seniority": "Manager / Lead"
-},
-"Real Estate Broker": {
-"canonicalTitle": "Real Estate Broker",
-"seniority": "Senior / Mid"
-},
-"Senior Director of Engineering": {
-"canonicalTitle": "Senior Director of Engineering",
-"seniority": "VP / Director"
-},
-"Director of Software Engineering": {
-"canonicalTitle": "Director of Software Engineering",
-"seniority": "VP / Director"
-},
-"Construction Manager": {
-"canonicalTitle": "Construction Manager",
-"seniority": "Manager / Lead"
-},
-"Chief Financial Officer": {
-"canonicalTitle": "Chief Financial Officer",
-"seniority": "C-Suite / Founder"
-},
-"Senior Project Director": {
-"canonicalTitle": "Senior Project Director",
-"seniority": "VP / Director"
-},
-"Technical Lead": {
-"canonicalTitle": "Technical Lead",
-"seniority": "Manager / Lead"
-},
-"Head of Product": {
-"canonicalTitle": "Head of Product",
-"seniority": "VP / Director"
-},
-"Talent Acquisition Manager": {
-"canonicalTitle": "Talent Acquisition Manager",
-"seniority": "Manager / Lead"
-},
-"Principal Recruiter": {
-"canonicalTitle": "Principal Recruiter",
-"seniority": "Senior / Mid"
-},
-"Founder, CEO": {
-"canonicalTitle": "CEO & Founder",
-"seniority": "C-Suite / Founder"
-},
-"Finance Manager": {
-"canonicalTitle": "Finance Manager",
-"seniority": "Manager / Lead"
-},
-"Sales Professional": {
-"canonicalTitle": "Sales Professional",
-"seniority": "Senior / Mid"
-},
-"Company Owner": {
-"canonicalTitle": "Business Owner",
-"seniority": "C-Suite / Founder"
-},
-"Regional Director": {
-"canonicalTitle": "Regional Director",
-"seniority": "VP / Director"
-},
-"Director of Recruiting": {
-"canonicalTitle": "Director of Recruiting",
-"seniority": "VP / Director"
-},
+  "Founder": {
+    "canonicalTitle": "Founder",
+    "seniority": "C-Suite / Founder"
+  },
+  "Retired": {
+    "canonicalTitle": "Retired",
+    "seniority": "Retired"
+  },
+  "Chief Operating Officer": {
+    "canonicalTitle": "Chief Operating Officer",
+    "seniority": "C-Suite / Founder"
+  },
+  "General Manager": {
+    "canonicalTitle": "General Manager",
+    "seniority": "Manager / Lead"
+  },
+  "Chief Executive Officer": {
+    "canonicalTitle": "Chief Executive Officer",
+    "seniority": "C-Suite / Founder"
+  },
+  "President": {
+    "canonicalTitle": "President",
+    "seniority": "C-Suite / Founder"
+  },
+  "Owner": {
+    "canonicalTitle": "Owner",
+    "seniority": "C-Suite / Founder"
+  },
+  "Managing Director": {
+    "canonicalTitle": "Managing Director",
+    "seniority": "VP / Director"
+  },
+  "Partner": {
+    "canonicalTitle": "Partner",
+    "seniority": "VP / Director"
+  },
+  "Founder & CEO": {
+    "canonicalTitle": "CEO & Founder",
+    "seniority": "C-Suite / Founder"
+  },
+  "Project Manager": {
+    "canonicalTitle": "Project Manager",
+    "seniority": "Manager / Lead"
+  },
+  "CEO": {
+    "canonicalTitle": "Chief Executive Officer",
+    "seniority": "C-Suite / Founder"
+  },
+  "Co-Founder": {
+    "canonicalTitle": "Co-Founder",
+    "seniority": "C-Suite / Founder"
+  },
+  "Managing Partner": {
+    "canonicalTitle": "Managing Partner",
+    "seniority": "C-Suite / Founder"
+  },
+  "Director": {
+    "canonicalTitle": "Director",
+    "seniority": "VP / Director"
+  },
+  "Vice President": {
+    "canonicalTitle": "Vice President",
+    "seniority": "VP / Director"
+  },
+  "Sales Manager": {
+    "canonicalTitle": "Sales Manager",
+    "seniority": "Manager / Lead"
+  },
+  "General Sales Manager": {
+    "canonicalTitle": "Sales Manager",
+    "seniority": "Manager / Lead"
+  },
+  "Senior Project Manager": {
+    "canonicalTitle": "Senior Project Manager",
+    "seniority": "Manager / Lead"
+  },
+  "Principal": {
+    "canonicalTitle": "Principal",
+    "seniority": "Senior / Mid"
+  },
+  "Senior Software Engineer": {
+    "canonicalTitle": "Senior Software Engineer",
+    "seniority": "Senior / Mid"
+  },
+  "Software Engineer": {
+    "canonicalTitle": "Software Engineer",
+    "seniority": "Senior / Mid"
+  },
+  "Chief Technology Officer": {
+    "canonicalTitle": "Chief Technology Officer",
+    "seniority": "C-Suite / Founder"
+  },
+  "Account Executive": {
+    "canonicalTitle": "Account Executive",
+    "seniority": "Senior / Mid"
+  },
+  "Product Manager": {
+    "canonicalTitle": "Product Manager",
+    "seniority": "Manager / Lead"
+  },
+  "Senior Product Manager": {
+    "canonicalTitle": "Senior Product Manager",
+    "seniority": "Manager / Lead"
+  },
+  "Consultant": {
+    "canonicalTitle": "Consultant",
+    "seniority": "Senior / Mid"
+  },
+  "Senior Consultant": {
+    "canonicalTitle": "Senior Consultant",
+    "seniority": "Senior / Mid"
+  },
+  "Founder and CEO": {
+    "canonicalTitle": "CEO & Founder",
+    "seniority": "C-Suite / Founder"
+  },
+  "Executive Director": {
+    "canonicalTitle": "Executive Director",
+    "seniority": "VP / Director"
+  },
+  "Business Development Manager": {
+    "canonicalTitle": "Business Development Manager",
+    "seniority": "Manager / Lead"
+  },
+  "Board Member": {
+    "canonicalTitle": "Board Member",
+    "seniority": "C-Suite / Founder"
+  },
+  "Principal Consultant": {
+    "canonicalTitle": "Principal Consultant",
+    "seniority": "Senior / Mid"
+  },
+  "Co-Founder & CEO": {
+    "canonicalTitle": "CEO & Co-Founder",
+    "seniority": "C-Suite / Founder"
+  },
+  "Account Manager": {
+    "canonicalTitle": "Account Manager",
+    "seniority": "Manager / Lead"
+  },
+  "Project Director": {
+    "canonicalTitle": "Project Director",
+    "seniority": "VP / Director"
+  },
+  "Director of Operations": {
+    "canonicalTitle": "Director of Operations",
+    "seniority": "VP / Director"
+  },
+  "CEO and Founder": {
+    "canonicalTitle": "CEO & Founder",
+    "seniority": "C-Suite / Founder"
+  },
+  "Senior Recruiter": {
+    "canonicalTitle": "Senior Recruiter",
+    "seniority": "Senior / Mid"
+  },
+  "Chief Operations Officer": {
+    "canonicalTitle": "Chief Operating Officer",
+    "seniority": "C-Suite / Founder"
+  },
+  "Chief Marketing Officer": {
+    "canonicalTitle": "Chief Marketing Officer",
+    "seniority": "C-Suite / Founder"
+  },
+  "Chief Product Officer": {
+    "canonicalTitle": "Chief Product Officer",
+    "seniority": "C-Suite / Founder"
+  },
+  "Sales Director": {
+    "canonicalTitle": "Sales Director",
+    "seniority": "VP / Director"
+  },
+  "Data Scientist": {
+    "canonicalTitle": "Data Scientist",
+    "seniority": "Senior / Mid"
+  },
+  "Attorney": {
+    "canonicalTitle": "Attorney",
+    "seniority": "Senior / Mid"
+  },
+  "Business Owner": {
+    "canonicalTitle": "Business Owner",
+    "seniority": "C-Suite / Founder"
+  },
+  "Machine Learning Engineer": {
+    "canonicalTitle": "Machine Learning Engineer",
+    "seniority": "Senior / Mid"
+  },
+  "Project Management Consultant": {
+    "canonicalTitle": "Project Management Consultant",
+    "seniority": "Senior / Mid"
+  },
+  "Senior Director": {
+    "canonicalTitle": "Senior Director",
+    "seniority": "VP / Director"
+  },
+  "Recruiter": {
+    "canonicalTitle": "Recruiter",
+    "seniority": "Senior / Mid"
+  },
+  "Chief Revenue Officer": {
+    "canonicalTitle": "Chief Revenue Officer",
+    "seniority": "C-Suite / Founder"
+  },
+  "Enterprise Account Executive": {
+    "canonicalTitle": "Enterprise Account Executive",
+    "seniority": "Senior / Mid"
+  },
+  "Regional Sales Manager": {
+    "canonicalTitle": "Regional Sales Manager",
+    "seniority": "Manager / Lead"
+  },
+  "CTO": {
+    "canonicalTitle": "Chief Technology Officer",
+    "seniority": "C-Suite / Founder"
+  },
+  "Engineering Manager": {
+    "canonicalTitle": "Engineering Manager",
+    "seniority": "Manager / Lead"
+  },
+  "Chief Revenue Officer (CRO)": {
+    "canonicalTitle": "Chief Revenue Officer",
+    "seniority": "C-Suite / Founder"
+  },
+  "Senior Talent Acquisition Specialist": {
+    "canonicalTitle": "Senior Talent Acquisition Specialist",
+    "seniority": "Senior / Mid"
+  },
+  "Senior Vice President": {
+    "canonicalTitle": "Senior Vice President",
+    "seniority": "VP / Director"
+  },
+  "Director of Business Development": {
+    "canonicalTitle": "Director of Business Development",
+    "seniority": "VP / Director"
+  },
+  "Founding Partner": {
+    "canonicalTitle": "Founding Partner",
+    "seniority": "C-Suite / Founder"
+  },
+  "Independent Consultant": {
+    "canonicalTitle": "Independent Consultant",
+    "seniority": "Senior / Mid"
+  },
+  "Vice President Operations": {
+    "canonicalTitle": "VP of Operations",
+    "seniority": "VP / Director"
+  },
+  "Operations Manager": {
+    "canonicalTitle": "Operations Manager",
+    "seniority": "Manager / Lead"
+  },
+  "President & CEO": {
+    "canonicalTitle": "President & CEO",
+    "seniority": "C-Suite / Founder"
+  },
+  "Chief Commercial Officer (CCO)": {
+    "canonicalTitle": "Chief Commercial Officer",
+    "seniority": "C-Suite / Founder"
+  },
+  "Assistant Professor": {
+    "canonicalTitle": "Assistant Professor",
+    "seniority": "Senior / Mid"
+  },
+  "Associate Professor": {
+    "canonicalTitle": "Associate Professor",
+    "seniority": "Senior / Mid"
+  },
+  "Regional Sales Director": {
+    "canonicalTitle": "Regional Sales Director",
+    "seniority": "VP / Director"
+  },
+  "Senior Technical Recruiter": {
+    "canonicalTitle": "Senior Technical Recruiter",
+    "seniority": "Senior / Mid"
+  },
+  "CEO and Co-founder": {
+    "canonicalTitle": "CEO & Co-Founder",
+    "seniority": "C-Suite / Founder"
+  },
+  "CEO & Co-Founder": {
+    "canonicalTitle": "CEO & Co-Founder",
+    "seniority": "C-Suite / Founder"
+  },
+  "Postdoctoral Researcher": {
+    "canonicalTitle": "Postdoctoral Researcher",
+    "seniority": "Junior / Associate"
+  },
+  "Director of Finance": {
+    "canonicalTitle": "Director of Finance",
+    "seniority": "VP / Director"
+  },
+  "Talent Acquisition Partner": {
+    "canonicalTitle": "Talent Acquisition Partner",
+    "seniority": "Senior / Mid"
+  },
+  "Project Controls Manager": {
+    "canonicalTitle": "Project Controls Manager",
+    "seniority": "Manager / Lead"
+  },
+  "Operating Partner": {
+    "canonicalTitle": "Operating Partner",
+    "seniority": "VP / Director"
+  },
+  "Vice President of Product Management": {
+    "canonicalTitle": "VP of Product Management",
+    "seniority": "VP / Director"
+  },
+  "Senior Program Manager": {
+    "canonicalTitle": "Senior Program Manager",
+    "seniority": "Manager / Lead"
+  },
+  "Sr. Recruiter": {
+    "canonicalTitle": "Senior Recruiter",
+    "seniority": "Senior / Mid"
+  },
+  "Adjunct Professor": {
+    "canonicalTitle": "Adjunct Professor",
+    "seniority": "Unknown / Other"
+  },
+  "Senior Process Engineer": {
+    "canonicalTitle": "Senior Process Engineer",
+    "seniority": "Senior / Mid"
+  },
+  "Founder/CEO": {
+    "canonicalTitle": "CEO & Founder",
+    "seniority": "C-Suite / Founder"
+  },
+  "Technical Program Manager": {
+    "canonicalTitle": "Technical Program Manager",
+    "seniority": "Manager / Lead"
+  },
+  "Sr. Project Manager": {
+    "canonicalTitle": "Senior Project Manager",
+    "seniority": "Manager / Lead"
+  },
+  "Real Estate Broker": {
+    "canonicalTitle": "Real Estate Broker",
+    "seniority": "Senior / Mid"
+  },
+  "Senior Director of Engineering": {
+    "canonicalTitle": "Senior Director of Engineering",
+    "seniority": "VP / Director"
+  },
+  "Director of Software Engineering": {
+    "canonicalTitle": "Director of Software Engineering",
+    "seniority": "VP / Director"
+  },
+  "Construction Manager": {
+    "canonicalTitle": "Construction Manager",
+    "seniority": "Manager / Lead"
+  },
+  "Chief Financial Officer": {
+    "canonicalTitle": "Chief Financial Officer",
+    "seniority": "C-Suite / Founder"
+  },
+  "Senior Project Director": {
+    "canonicalTitle": "Senior Project Director",
+    "seniority": "VP / Director"
+  },
+  "Technical Lead": {
+    "canonicalTitle": "Technical Lead",
+    "seniority": "Manager / Lead"
+  },
+  "Head of Product": {
+    "canonicalTitle": "Head of Product",
+    "seniority": "VP / Director"
+  },
+  "Talent Acquisition Manager": {
+    "canonicalTitle": "Talent Acquisition Manager",
+    "seniority": "Manager / Lead"
+  },
+  "Principal Recruiter": {
+    "canonicalTitle": "Principal Recruiter",
+    "seniority": "Senior / Mid"
+  },
+  "Founder, CEO": {
+    "canonicalTitle": "CEO & Founder",
+    "seniority": "C-Suite / Founder"
+  },
+  "Finance Manager": {
+    "canonicalTitle": "Finance Manager",
+    "seniority": "Manager / Lead"
+  },
+  "Sales Professional": {
+    "canonicalTitle": "Sales Professional",
+    "seniority": "Senior / Mid"
+  },
+  "Company Owner": {
+    "canonicalTitle": "Business Owner",
+    "seniority": "C-Suite / Founder"
+  },
+  "Regional Director": {
+    "canonicalTitle": "Regional Director",
+    "seniority": "VP / Director"
+  },
+  "Director of Recruiting": {
+    "canonicalTitle": "Director of Recruiting",
+    "seniority": "VP / Director"
+  },
 
-"UX Researcher": {
-"canonicalTitle": "UX Researcher",
-"seniority": "Senior / Mid"
-},
-"Software Engineer": {
-"canonicalTitle": "Software Engineer",
-"seniority": "Senior / Mid"
-},
-"COO": {
-"canonicalTitle": "COO",
-"seniority": "C-Suite / Founder"
-},
-"Chief of Staff": {
-"canonicalTitle": "Chief of Staff",
-"seniority": "VP / Director"
-},
-"Recruiter": {
-"canonicalTitle": "Recruiter",
-"seniority": "Senior / Mid"
-},
-"Designer": {
-"canonicalTitle": "Designer",
-"seniority": "Senior / Mid"
+  "UX Researcher": {
+    "canonicalTitle": "UX Researcher",
+    "seniority": "Senior / Mid"
+  },
+  "Software Engineer": {
+    "canonicalTitle": "Software Engineer",
+    "seniority": "Senior / Mid"
+  },
+  "COO": {
+    "canonicalTitle": "COO",
+    "seniority": "C-Suite / Founder"
+  },
+  "Chief of Staff": {
+    "canonicalTitle": "Chief of Staff",
+    "seniority": "VP / Director"
+  },
+  "Recruiter": {
+    "canonicalTitle": "Recruiter",
+    "seniority": "Senior / Mid"
+  },
+  "Designer": {
+    "canonicalTitle": "Designer",
+    "seniority": "Senior / Mid"
 
-},
-"Career Break – Parental Leave": {
-"canonicalTitle": "Career Break",
-"seniority": "Unknown / Other"
-},
-"Lean Six Sigma Master Black Belt": {
-"canonicalTitle": "Process Engineer",
-"seniority": "Senior / Mid"
-},
-"No position at the moment": {
-"canonicalTitle": "Unemployed",
-"seniority": "Unknown / Other"
-},
-"Especialista en ventas": {
-"canonicalTitle": "Sales Specialist",
-"seniority": "Senior / Mid"
-},
-"Board Observer": {
-"canonicalTitle": "Board Observer",
-"seniority": "VP / Director"
-},
-"Afdelingsleder": {
-"canonicalTitle": "Department Manager",
-"seniority": "Manager / Lead"
-},
-"Estimator": {
-"canonicalTitle": "Estimator",
-"seniority": "Senior / Mid"
-},
-"Experienced Exploration Geoscientist": {
-"canonicalTitle": "Senior Geoscientist",
-"seniority": "Senior / Mid"
-},
-"Group TPM, Foundation Model and ML Infra": {
-"canonicalTitle": "Technical Program Manager",
-"seniority": "Manager / Lead"
-},
-"Speech Language Pathologist, PRN": {
-"canonicalTitle": "Speech Language Pathologist",
-"seniority": "Senior / Mid"
-},
-"Group Subsurface Manager": {
-"canonicalTitle": "Subsurface Manager",
-"seniority": "Manager / Lead"
-},
-"Compensation Mgr": {
-"canonicalTitle": "Compensation Manager",
-"seniority": "Manager / Lead"
-},
-"Podcast Host": {
-"canonicalTitle": "Podcast Host",
-"seniority": "Senior / Mid"
-},
-"Ecosystem Engagement Lead": {
-"canonicalTitle": "Engagement Lead",
-"seniority": "Manager / Lead"
-},
-"Facilities Coordinator - GWS @ NVIDIA": {
-"canonicalTitle": "Facilities Coordinator",
-"seniority": "Junior / Associate"
-},
-"Transformation and Integration Strategy": {
-"canonicalTitle": "Strategy Specialist",
-"seniority": "Senior / Mid"
-},
-"IoT Program Manager - Lighting Solutions": {
-"canonicalTitle": "Program Manager",
-"seniority": "Manager / Lead"
-},
-"Senior Territory Account Specialist - Ultra Rare Renal": {
-"canonicalTitle": "Senior Account Specialist",
-"seniority": "Senior / Mid"
-},
-"CCS Subsurface Manager": {
-"canonicalTitle": "Subsurface Manager",
-"seniority": "Manager / Lead"
-},
-"Pipeline Control Center & Ops Support Mgr": {
-"canonicalTitle": "Operations Support Manager",
-"seniority": "Manager / Lead"
-},
-"Seeking New Opportunities": {
-"canonicalTitle": "Unemployed",
-"seniority": "Unknown / Other"
-}
+  },
+  "Career Break – Parental Leave": {
+    "canonicalTitle": "Career Break",
+    "seniority": "Unknown / Other"
+  },
+  "Lean Six Sigma Master Black Belt": {
+    "canonicalTitle": "Process Engineer",
+    "seniority": "Senior / Mid"
+  },
+  "No position at the moment": {
+    "canonicalTitle": "Unemployed",
+    "seniority": "Unknown / Other"
+  },
+  "Especialista en ventas": {
+    "canonicalTitle": "Sales Specialist",
+    "seniority": "Senior / Mid"
+  },
+  "Board Observer": {
+    "canonicalTitle": "Board Observer",
+    "seniority": "VP / Director"
+  },
+  "Afdelingsleder": {
+    "canonicalTitle": "Department Manager",
+    "seniority": "Manager / Lead"
+  },
+  "Estimator": {
+    "canonicalTitle": "Estimator",
+    "seniority": "Senior / Mid"
+  },
+  "Experienced Exploration Geoscientist": {
+    "canonicalTitle": "Senior Geoscientist",
+    "seniority": "Senior / Mid"
+  },
+  "Group TPM, Foundation Model and ML Infra": {
+    "canonicalTitle": "Technical Program Manager",
+    "seniority": "Manager / Lead"
+  },
+  "Speech Language Pathologist, PRN": {
+    "canonicalTitle": "Speech Language Pathologist",
+    "seniority": "Senior / Mid"
+  },
+  "Group Subsurface Manager": {
+    "canonicalTitle": "Subsurface Manager",
+    "seniority": "Manager / Lead"
+  },
+  "Compensation Mgr": {
+    "canonicalTitle": "Compensation Manager",
+    "seniority": "Manager / Lead"
+  },
+  "Podcast Host": {
+    "canonicalTitle": "Podcast Host",
+    "seniority": "Senior / Mid"
+  },
+  "Ecosystem Engagement Lead": {
+    "canonicalTitle": "Engagement Lead",
+    "seniority": "Manager / Lead"
+  },
+  "Facilities Coordinator - GWS @ NVIDIA": {
+    "canonicalTitle": "Facilities Coordinator",
+    "seniority": "Junior / Associate"
+  },
+  "Transformation and Integration Strategy": {
+    "canonicalTitle": "Strategy Specialist",
+    "seniority": "Senior / Mid"
+  },
+  "IoT Program Manager - Lighting Solutions": {
+    "canonicalTitle": "Program Manager",
+    "seniority": "Manager / Lead"
+  },
+  "Senior Territory Account Specialist - Ultra Rare Renal": {
+    "canonicalTitle": "Senior Account Specialist",
+    "seniority": "Senior / Mid"
+  },
+  "CCS Subsurface Manager": {
+    "canonicalTitle": "Subsurface Manager",
+    "seniority": "Manager / Lead"
+  },
+  "Pipeline Control Center & Ops Support Mgr": {
+    "canonicalTitle": "Operations Support Manager",
+    "seniority": "Manager / Lead"
+  },
+  "Seeking New Opportunities": {
+    "canonicalTitle": "Unemployed",
+    "seniority": "Unknown / Other"
+  },
+  "retired": {
+    "canonicalTitle": "Retired",
+    "seniority": "Retired"
+  },
+  "retired engineer": {
+    "canonicalTitle": "Retired Engineer",
+    "seniority": "Retired"
+  },
+  "retired executive": {
+    "canonicalTitle": "Retired Executive",
+    "seniority": "Retired"
+  },
+  "retired manager": {
+    "canonicalTitle": "Retired Manager",
+    "seniority": "Retired"
+  },
+  "professor emeritus": {
+    "canonicalTitle": "Professor Emeritus",
+    "seniority": "Retired"
+  },
+  "emeritus": {
+    "canonicalTitle": "Emeritus",
+    "seniority": "Retired"
+  },
+  "retiree": {
+    "canonicalTitle": "Retiree",
+    "seniority": "Retired"
+  },
+  "semi-retired": {
+    "canonicalTitle": "Semi-Retired",
+    "seniority": "Retired"
+  },
+  "retired director": {
+    "canonicalTitle": "Retired Director",
+    "seniority": "Retired"
+  },
+  "retired vice president": {
+    "canonicalTitle": "Retired Vice President",
+    "seniority": "Retired"
+  },
+  "retired president": {
+    "canonicalTitle": "Retired President",
+    "seniority": "Retired"
+  },
+  "retired consultant": {
+    "canonicalTitle": "Retired Consultant",
+    "seniority": "Retired"
+  },
+  "emeritus professor": {
+    "canonicalTitle": "Emeritus Professor",
+    "seniority": "Retired"
+  },
+  "director emeritus": {
+    "canonicalTitle": "Director Emeritus",
+    "seniority": "Retired"
+  },
+  "president emeritus": {
+    "canonicalTitle": "President Emeritus",
+    "seniority": "Retired"
+  },
+  "chairman emeritus": {
+    "canonicalTitle": "Chairman Emeritus",
+    "seniority": "Retired"
+  }
 };

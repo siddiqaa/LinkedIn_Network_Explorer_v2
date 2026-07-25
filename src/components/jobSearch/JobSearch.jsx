@@ -89,9 +89,9 @@ export function JobSearch({ data, mlResults }) {
               onChange={e => { setCompany(e.target.value); setContactQuery(""); }}
               style={{ ...inputStyle, cursor: "pointer" }}
             >
-              <option value="">Any company</option>
+              <option value="" style={{ background: C.card, color: C.text }}>Any company</option>
               {companies.filter(Boolean).map(c => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c} value={c} style={{ background: C.card, color: C.text }}>{c}</option>
               ))}
             </select>
             {company && (
@@ -213,8 +213,8 @@ export function JobSearch({ data, mlResults }) {
                       const linkedinUrl = r["URL"] || `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(fullName + " " + company)}`;
 
                       return (
-                        <tr key={i} style={{ borderBottom: `1px solid ${C.border}22`, transition: "background 0.1s" }}
-                          onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
+                        <tr key={i} style={{ borderBottom: `1px solid ${C.border}33`, transition: "background 0.1s" }}
+                          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)'}
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                         >
                           <td style={{ padding: "10px 12px", fontWeight: 600, color: C.text, whiteSpace: "nowrap" }}>

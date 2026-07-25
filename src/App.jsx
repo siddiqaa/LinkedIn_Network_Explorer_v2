@@ -9,12 +9,16 @@ import { TopCompanies } from "./components/overview/TopCompanies";
 import { Heatmap } from "./components/activity/Heatmap";
 import { ConnectionsTable } from "./components/connections/ConnectionsTable";
 import { JobSearch } from "./components/jobSearch/JobSearch";
+import { preloadModel } from "./lib/embeddingClassifier";
 
 const STORAGE_KEY = "linkedin_network_explorer_data";
 const STORAGE_META_KEY = "linkedin_network_explorer_meta";
 const STORAGE_ML_KEY = "linkedin_network_explorer_ml_results";
 
 export default function App() {
+  useEffect(() => {
+    preloadModel();
+  }, []);
   const [data, setData] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -125,7 +129,7 @@ export default function App() {
     return { total: data.length, withEmail, companies: companies.size, newest, oldest };
   }, [data]);
 
-  const TABS = ["overview", "seniority embedding", "activity", "companies", "connections", "job search"];
+  const TABS = ["overview", "activity", "companies", "connections", "seniority classification", "job search"];
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'Syne', sans-serif" }}>
@@ -192,26 +196,32 @@ export default function App() {
           /* Upload screen */
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 400, gap: 24 }}>
             <div style={{
+              background: C.card,
               border: `2px dashed ${C.border}`, borderRadius: 16,
               padding: "64px 80px", textAlign: "center", cursor: "pointer",
-              transition: "border-color 0.2s",
+              transition: "all 0.2s ease",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)"
             }}
               onClick={() => fileRef.current?.click()}
-              onDragOver={e => e.preventDefault()}
+              onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = C.accent; }}
+              onDragLeave={e => { e.currentTarget.style.borderColor = C.border; }}
               onDrop={e => { e.preventDefault(); loadFile(e.dataTransfer.files[0]); }}
             >
-              <div style={{ fontSize: 40, marginBottom: 16 }}>📊</div>
-              <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Drop your Connections.csv here</div>
+              <div style={{ fontSize: 44, marginBottom: 16, filter: "drop-shadow(0 2px 8px rgba(16,185,129,0.3))" }}>📊</div>
+              <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8, color: C.text }}>Drop your Connections.csv here</div>
               <div style={{ fontSize: 13, color: C.textDim, marginBottom: 24 }}>
                 From LinkedIn → Settings → Data Privacy → Get a copy of your data
               </div>
               <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
                 <button onClick={e => { e.stopPropagation(); fileRef.current?.click(); }}
-                  style={{ padding: "10px 24px", background: C.accent, border: "none", borderRadius: 8, color: '#ffffff', fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                  style={{ padding: "10px 24px", background: C.accent, border: "none", borderRadius: 8, color: '#ffffff', fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", boxShadow: `0 4px 14px ${C.accent}40` }}>
                   Choose file
                 </button>
                 <button onClick={e => { e.stopPropagation(); loadSample(); }}
-                  style={{ padding: "10px 24px", background: "transparent", border: `1px solid ${C.border}`, borderRadius: 8, color: C.textDim, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                  style={{ padding: "10px 24px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, color: C.textDim, fontSize: 13, cursor: "pointer", fontFamily: "inherit", transition: "border-color 0.15s" }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = C.accent}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
+                >
                   Load sample data
                 </button>
               </div>
@@ -236,17 +246,18 @@ export default function App() {
             </div>
 
             {/* Tabs */}
-            <div style={{ display: "flex", gap: 4, marginBottom: 20, background: '#eef2f7', padding: 4, borderRadius: 10, width: "fit-content" }}>
+            <div style={{ display: "flex", gap: 4, marginBottom: 24, background: C.surface, border: `1px solid ${C.border}`, padding: 4, borderRadius: 12, width: "fit-content", flexWrap: "wrap" }}>
               {TABS.map(t => (
                 <button key={t} onClick={() => setTab(t)}
                   style={{
-                    padding: "7px 18px", borderRadius: 8, border: "none", cursor: "pointer",
+                    padding: "8px 18px", borderRadius: 8, cursor: "pointer",
                     background: tab === t ? C.card : "transparent",
-                    color: tab === t ? C.text : C.textDim,
+                    color: tab === t ? C.accent : C.textDim,
                     fontSize: 12, fontWeight: tab === t ? 600 : 400,
                     fontFamily: "inherit", textTransform: "capitalize",
-                    transition: "all 0.15s",
-                    boxShadow: tab === t ? '0 1px 3px rgba(0,0,0,0.10)' : 'none',
+                    transition: "all 0.15s ease",
+                    border: tab === t ? `1px solid ${C.accent}44` : '1px solid transparent',
+                    boxShadow: tab === t ? `0 2px 10px ${C.accent}20` : 'none',
                   }}>
                   {t}
                 </button>
@@ -259,7 +270,7 @@ export default function App() {
               </Section>
             )}
 
-            {tab === "seniority embedding" && (
+            {tab === "seniority classification" && (
               <EmbeddingSenioritySection
                 data={data}
                 mlResults={mlResults}

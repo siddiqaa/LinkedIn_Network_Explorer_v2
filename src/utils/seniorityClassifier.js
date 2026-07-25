@@ -8,10 +8,12 @@ export function classifySeniority(title = "", mlResults = null) {
 
   // Check ML Cosine Embedding results
   if (mlResults) {
-    if (mlResults[t]?.seniority) return mlResults[t].seniority;
+    if (mlResults[t]?.seniority && mlResults[t]?.override !== false) {
+      return mlResults[t].seniority;
+    }
     const lowerKey = t.toLowerCase();
     for (const k in mlResults) {
-      if (k.toLowerCase() === lowerKey && mlResults[k]?.seniority) {
+      if (k.toLowerCase() === lowerKey && mlResults[k]?.seniority && mlResults[k]?.override !== false) {
         return mlResults[k].seniority;
       }
     }

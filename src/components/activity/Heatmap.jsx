@@ -45,8 +45,8 @@ export function Heatmap({ data }) {
                   const intensity = grid.max > 0 ? count / grid.max : 0;
                   const isHov = hovered === key;
                   const bg = count === 0
-                    ? C.border
-                    : `rgba(110,231,183,${0.1 + intensity * 0.9})`;
+                    ? "rgba(255, 255, 255, 0.04)"
+                    : `rgba(16, 185, 129, ${0.18 + intensity * 0.82})`;
                   return (
                     <td key={mi}
                       onMouseEnter={() => setHovered(key)}
@@ -56,8 +56,9 @@ export function Heatmap({ data }) {
                         width: 28, height: 22, borderRadius: 3,
                         background: bg,
                         border: isHov ? `1px solid ${C.accent}` : "1px solid transparent",
+                        boxShadow: isHov ? `0 0 8px ${C.accent}aa` : "none",
                         cursor: count > 0 ? "pointer" : "default",
-                        transition: "border 0.15s",
+                        transition: "all 0.15s ease",
                         position: "relative",
                       }}
                     />
@@ -71,8 +72,8 @@ export function Heatmap({ data }) {
       {/* legend */}
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12 }}>
         <span style={{ color: C.textDim, fontSize: 11 }}>Less</span>
-        {[0.05, 0.25, 0.5, 0.75, 1].map(v => (
-          <div key={v} style={{ width: 16, height: 16, borderRadius: 3, background: `rgba(110,231,183,${v})` }} />
+        {[0.1, 0.3, 0.5, 0.75, 1].map(v => (
+          <div key={v} style={{ width: 16, height: 16, borderRadius: 3, background: `rgba(16, 185, 129, ${v})` }} />
         ))}
         <span style={{ color: C.textDim, fontSize: 11 }}>More</span>
       </div>

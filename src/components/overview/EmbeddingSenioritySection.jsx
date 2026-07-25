@@ -13,7 +13,7 @@ export function EmbeddingSenioritySection({ data, mlResults, onResultsGenerated 
   const [progressMsg, setProgressMsg] = useState("");
   const [progressPct, setProgressPct] = useState(0);
   const [error, setError] = useState(null);
-  const [showTable, setShowTable] = useState(false);
+  const [showTable, setShowTable] = useState(true);
   const [showExplanation, setShowExplanation] = useState(false);
   const [tableFilter, setTableFilter] = useState("");
   const [sampledConns, setSampledConns] = useState([]);
@@ -23,24 +23,40 @@ export function EmbeddingSenioritySection({ data, mlResults, onResultsGenerated 
     return Array.from(new Set(data.map(r => (r["Position_raw"] || r["Position"] || "").trim()))).filter(Boolean);
   }, [data]);
 
-  const runClassifier = async () => {
+  const unknownTitles = useMemo(() => {
+    return uniqueTitles.filter(t => classifySeniority(t) === "Unknown / Other");
+  }, [uniqueTitles]);
+
+  const runClassifier = async (mode = "all") => {
     if (!data || data.length === 0) return;
     setLoading(true);
     setError(null);
 
-    const validConns = data.filter(r => (r["First Name"] || r["Last Name"] || r["Position"] || r["Position_raw"]).trim());
+    const validConns = data.filter(r => (r["First Name"] || r["Last Name"] || r["Position"] || r["Position_raw"] || "").trim());
     setSampledConns(validConns);
 
     const allTitlesToClassify = Array.from(new Set(validConns.map(r => (r["Position_raw"] || r["Position"] || "").trim()))).filter(Boolean);
+    let targetTitles = allTitlesToClassify;
+
+    if (mode === "unknowns") {
+      targetTitles = allTitlesToClassify.filter(t => classifySeniority(t) === "Unknown / Other");
+    }
+
+    if (targetTitles.length === 0) {
+      setLoading(false);
+      setProgressMsg("All titles are already classified by rule/dictionary mapping!");
+      return;
+    }
 
     try {
-      setProgressMsg(`Loading all-MiniLM-L6-v2 vector model & extracting embeddings for all ${allTitlesToClassify.length} titles...`);
+      const modeLabel = mode === "unknowns" ? `${targetTitles.length} unknown/unmapped` : `all ${targetTitles.length} unique`;
+      setProgressMsg(`Loading all-MiniLM-L6-v2 vector model & extracting embeddings for ${modeLabel} titles...`);
       setProgressPct(10);
-      const results = await classifyTitlesBatchEmbeddings(allTitlesToClassify, (processed, total) => {
+      const results = await classifyTitlesBatchEmbeddings(targetTitles, (processed, total) => {
         const pct = Math.min(99, Math.round((processed / total) * 90) + 10);
         setProgressPct(pct);
-        setProgressMsg(`Embedding similarity progress: ${processed} / ${total} unique titles (${pct}%)`);
-      }, allTitlesToClassify.length, 16);
+        setProgressMsg(`Embedding similarity progress: ${processed} / ${total} titles (${pct}%)`);
+      }, targetTitles.length, 32);
 
       const merged = { ...(mlResults || {}), ...(embeddingResults || {}), ...results };
       setEmbeddingResults(merged);
@@ -95,25 +111,6 @@ export function EmbeddingSenioritySection({ data, mlResults, onResultsGenerated 
     setSelectedTitles(new Set());
   }, [lowConfidenceTitles]);
 
-  const filteredLowConfTitles = useMemo(() => {
-    if (!lowConfFilter.trim()) return lowConfidenceTitles;
-    const q = lowConfFilter.toLowerCase();
-    return lowConfidenceTitles.filter(item =>
-      item.title.toLowerCase().includes(q) ||
-      item.seniority.toLowerCase().includes(q) ||
-      item.closestMatch.toLowerCase().includes(q)
-    );
-  }, [lowConfidenceTitles, lowConfFilter]);
-
-  const selectedList = useMemo(() => {
-    return lowConfidenceTitles.filter(i => selectedTitles.has(i.title));
-  }, [lowConfidenceTitles, selectedTitles]);
-
-  const isAllFilteredSelected = useMemo(() => {
-    if (filteredLowConfTitles.length === 0) return false;
-    return filteredLowConfTitles.every(i => selectedTitles.has(i.title));
-  }, [filteredLowConfTitles, selectedTitles]);
-
   const toggleSelectTitle = (title) => {
     setSelectedTitles(prev => {
       const next = new Set(prev);
@@ -126,30 +123,10 @@ export function EmbeddingSenioritySection({ data, mlResults, onResultsGenerated 
     });
   };
 
-  const toggleSelectAll = () => {
-    if (isAllFilteredSelected) {
-      setSelectedTitles(prev => {
-        const next = new Set(prev);
-        filteredLowConfTitles.forEach(item => next.delete(item.title));
-        return next;
-      });
-    } else {
-      setSelectedTitles(prev => {
-        const next = new Set(prev);
-        filteredLowConfTitles.forEach(item => next.add(item.title));
-        return next;
-      });
-    }
-  };
-
-  const selectTopN = (n) => {
-    const topN = lowConfidenceTitles.slice(0, n).map(i => i.title);
-    setSelectedTitles(new Set(topN));
-  };
-
   const copyLowConfPrompt = () => {
-    const titlesToCopy = selectedList.map(i => i.title);
-    if (titlesToCopy.length === 0) return;
+    if (selectedTitles.size === 0) return;
+    const titlesToCopy = Array.from(selectedTitles);
+
     const titlesJson = JSON.stringify(titlesToCopy, null, 2);
     const prompt = `You are an expert HR Data Scientist.
 I have ${titlesToCopy.length} raw job titles from my LinkedIn network that matched our vector similarity model with low confidence (< ${threshold}% similarity).
@@ -159,6 +136,7 @@ Normalize each title to a canonical title and strictly assign one of the followi
 - "Manager / Lead"
 - "Senior / Mid"
 - "Junior / Associate"
+- "Retired"
 - "Unknown / Other"
 
 Return a single JSON object mapping raw titles directly to { "canonicalTitle": "...", "seniority": "..." }.
@@ -184,57 +162,148 @@ ${titlesJson}`;
     return count;
   }, [effectiveResults, uniqueTitles]);
 
-  const displayRows = useMemo(() => {
+  const handleToggleOverride = (title) => {
+    if (!effectiveResults || !effectiveResults[title]) return;
+    const current = effectiveResults[title];
+    const isCurrentlyOverridden = current.override !== false;
+    const updated = {
+      ...effectiveResults,
+      [title]: {
+        ...current,
+        override: !isCurrentlyOverridden
+      }
+    };
+    setEmbeddingResults(updated);
+    if (onResultsGenerated) {
+      onResultsGenerated(updated);
+    }
+  };
+
+  const handleApplyAllOverrides = () => {
+    if (!effectiveResults) return;
+    const updated = { ...effectiveResults };
+    Object.keys(updated).forEach(title => {
+      if (updated[title]?.seniority) {
+        updated[title] = {
+          ...updated[title],
+          override: true
+        };
+      }
+    });
+    setEmbeddingResults(updated);
+    if (onResultsGenerated) {
+      onResultsGenerated(updated);
+    }
+  };
+
+  const handleRevertAllOverrides = () => {
+    if (!effectiveResults) return;
+    const updated = { ...effectiveResults };
+    Object.keys(updated).forEach(title => {
+      if (updated[title]) {
+        updated[title] = {
+          ...updated[title],
+          override: false
+        };
+      }
+    });
+    setEmbeddingResults(updated);
+    if (onResultsGenerated) {
+      onResultsGenerated(updated);
+    }
+  };
+
+  const [activeTab, setActiveTab] = useState("all"); // "all", "low_conf", "diffs", "overrides"
+
+  const allPool = useMemo(() => {
     let pool = [];
-    if (sampledConns.length > 0) {
-      pool = sampledConns.map((conn, idx) => {
-        const name = `${conn["First Name"] || ""} ${conn["Last Name"] || ""}`.trim() || "Unknown";
-        const company = conn["Company"] || "—";
-        const title = (conn["Position_raw"] || conn["Position"] || "").trim();
-        const mapLabel = classifySeniority(title, effectiveResults);
-        const embRes = effectiveResults ? effectiveResults[title] : null;
-        return {
-          id: idx + "-" + name + "-" + title,
-          name,
-          company,
-          title,
-          mapLabel,
-          embSeniority: embRes?.seniority || "—",
-          confidence: embRes?.confidence ?? null,
-          rawLabel: embRes?.rawLabel || "—",
-          linkedinUrl: conn["URL"] || `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(name + " " + company)}`
-        };
-      });
-    } else if (data && data.length > 0) {
-      pool = data.map((conn, idx) => {
-        const name = `${conn["First Name"] || ""} ${conn["Last Name"] || ""}`.trim() || "Unknown";
-        const company = conn["Company"] || "—";
-        const title = (conn["Position_raw"] || conn["Position"] || "").trim();
-        const mapLabel = classifySeniority(title, effectiveResults);
-        const embRes = effectiveResults ? effectiveResults[title] : null;
-        return {
-          id: idx + "-" + name + "-" + title,
-          name,
-          company,
-          title,
-          mapLabel,
-          embSeniority: embRes?.seniority || "—",
-          confidence: embRes?.confidence ?? null,
-          rawLabel: embRes?.rawLabel || "—",
-          linkedinUrl: conn["URL"] || `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(name + " " + company)}`
-        };
-      });
+    const source = sampledConns.length > 0 ? sampledConns : (data || []);
+    pool = source.map((conn, idx) => {
+      const name = `${conn["First Name"] || ""} ${conn["Last Name"] || ""}`.trim() || "Unknown";
+      const company = conn["Company"] || "—";
+      const title = (conn["Position_raw"] || conn["Position"] || "").trim();
+      const mapLabel = classifySeniority(title);
+      const embRes = effectiveResults ? effectiveResults[title] : null;
+      return {
+        id: idx + "-" + name + "-" + title,
+        name,
+        company,
+        title,
+        mapLabel,
+        embRes,
+        embSeniority: embRes?.seniority || "—",
+        confidence: embRes?.confidence ?? null,
+        rawLabel: embRes?.rawLabel || "—",
+        linkedinUrl: conn["URL"] || `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(name + " " + company)}`
+      };
+    });
+    return pool;
+  }, [data, sampledConns, effectiveResults]);
+
+  const tabCounts = useMemo(() => {
+    let lowConf = 0;
+    let overrides = 0;
+    allPool.forEach(r => {
+      if (r.confidence !== null && r.confidence < threshold) lowConf++;
+      if (r.embRes && r.embSeniority !== "—" && (r.embRes.override !== false || r.mapLabel !== r.embSeniority)) overrides++;
+    });
+    return {
+      all: allPool.length,
+      low_conf: lowConf,
+      overrides
+    };
+  }, [allPool, threshold]);
+
+  const displayRows = useMemo(() => {
+    let filtered = allPool;
+
+    if (activeTab === "low_conf") {
+      filtered = filtered.filter(r => r.confidence !== null && r.confidence < threshold);
+    } else if (activeTab === "overrides") {
+      filtered = filtered.filter(r => r.embRes && r.embSeniority !== "—" && (r.embRes.override !== false || r.mapLabel !== r.embSeniority));
     }
 
-    if (!tableFilter.trim()) return pool;
+    if (!tableFilter.trim()) return filtered;
     const q = tableFilter.toLowerCase();
-    return pool.filter(r =>
+    return filtered.filter(r =>
       r.name.toLowerCase().includes(q) ||
       r.company.toLowerCase().includes(q) ||
       r.title.toLowerCase().includes(q) ||
-      r.embSeniority.toLowerCase().includes(q)
+      r.embSeniority.toLowerCase().includes(q) ||
+      r.mapLabel.toLowerCase().includes(q)
     );
-  }, [data, sampledConns, effectiveResults, tableFilter]);
+  }, [allPool, activeTab, threshold, tableFilter]);
+
+  const selectedContactsCount = useMemo(() => {
+    if (selectedTitles.size === 0) return 0;
+    return displayRows.filter(r => selectedTitles.has(r.title)).length;
+  }, [displayRows, selectedTitles]);
+
+  const isAllFilteredSelected = useMemo(() => {
+    if (displayRows.length === 0) return false;
+    return displayRows.every(r => selectedTitles.has(r.title));
+  }, [displayRows, selectedTitles]);
+
+  const toggleSelectAll = () => {
+    if (isAllFilteredSelected) {
+      setSelectedTitles(prev => {
+        const next = new Set(prev);
+        displayRows.forEach(r => next.delete(r.title));
+        return next;
+      });
+    } else {
+      setSelectedTitles(prev => {
+        const next = new Set(prev);
+        displayRows.forEach(r => next.add(r.title));
+        return next;
+      });
+    }
+  };
+
+  const selectTopN = (n) => {
+    const topN = displayRows.slice(0, n).map(r => r.title);
+    setSelectedTitles(new Set(topN));
+  };
 
   return (
     <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, padding: 24, marginBottom: 20 }}>
@@ -245,34 +314,37 @@ ${titlesJson}`;
             <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, color: C.textDim, textTransform: "uppercase" }}>
               Seniority Classification Engine
             </span>
-            <span style={{
-              fontSize: 10, padding: "2px 8px", borderRadius: 99,
-              background: `${C.accent3}22`,
-              color: C.accent3,
-              border: `1px solid ${C.accent3}44`,
-              fontWeight: 600
-            }}>
-              📐 Vector Embedding Similarity (all-MiniLM-L6-v2)
-            </span>
-          </div>
-          <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>
-            Vector space cosine similarity using 384-dim dense embeddings against seniority prototypes & TITLE_MAP entries
           </div>
         </div>
 
         {/* Action Buttons */}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           {!loading && (
-            <button
-              onClick={runClassifier}
-              style={{
-                padding: "7px 14px", background: C.accent3,
-                border: "none", borderRadius: 8, color: "#ffffff", fontSize: 12, fontWeight: 600,
-                cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6,
-                boxShadow: "0 2px 4px rgba(0, 0, 0, 0.15)"
-              }}>
-              <span>⚡</span> {effectiveResults ? "Re-Run Classification" : `Run Embedding Classification (${uniqueTitles.length} Unique Titles)`}
-            </button>
+            <>
+              <button
+                onClick={() => runClassifier("unknowns")}
+                title="Fast ML run: Only compute vector embeddings for titles that could not be mapped by exact dictionary or keyword rules"
+                style={{
+                  padding: "7px 14px", background: C.accent3,
+                  border: "none", borderRadius: 8, color: "#ffffff", fontSize: 12, fontWeight: 600,
+                  cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6,
+                  boxShadow: "0 2px 4px rgba(0, 0, 0, 0.15)"
+                }}>
+                <span>⚡</span> Classify Unknowns Only ({unknownTitles.length} Titles)
+              </button>
+
+              <button
+                onClick={() => runClassifier("all")}
+                title="Full ML run: Compute vector embeddings for all unique titles across the dataset"
+                style={{
+                  padding: "7px 14px", background: C.surface,
+                  border: `1px solid ${C.accent3}`, borderRadius: 8, color: C.accent3, fontSize: 12, fontWeight: 600,
+                  cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6,
+                  boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)"
+                }}>
+                <span>🧠</span> Classify All Unique Titles ({uniqueTitles.length} Titles)
+              </button>
+            </>
           )}
 
           <button
@@ -333,7 +405,7 @@ ${titlesJson}`;
           </div>
 
           <div style={{ fontSize: 11, color: C.textDim, borderTop: `1px solid ${C.border}`, paddingTop: 10 }}>
-            <strong>Seniority Categories:</strong> C-Suite / Founder, VP / Director, Manager / Lead, Senior / Mid, Junior / Associate, Unknown / Other.
+            <strong>Seniority Categories:</strong> C-Suite / Founder, VP / Director, Manager / Lead, Senior / Mid, Junior / Associate, Retired, Unknown / Other.
           </div>
         </div>
       )}
@@ -359,7 +431,7 @@ ${titlesJson}`;
       )}
 
       {error && (
-        <div style={{ padding: 12, background: "#fef2f2", border: "1px solid #fca5a5", color: "#991b1b", borderRadius: 8, fontSize: 12, marginBottom: 16 }}>
+        <div style={{ padding: 12, background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#fca5a5", borderRadius: 8, fontSize: 12, marginBottom: 16 }}>
           {error}
         </div>
       )}
@@ -371,13 +443,13 @@ ${titlesJson}`;
       {effectiveResults && (
         <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
           <div style={{ fontSize: 12, color: C.text }}>
-            <strong>Vector Embedding Insights:</strong> Evaluated batch of <strong>{sampledConns.length || data?.length || Object.keys(effectiveResults).length}</strong> connections.
+            <strong>Seniority Classification Comparison:</strong> Evaluated batch of <strong>{sampledConns.length || data?.length || Object.keys(effectiveResults).length}</strong> connections.
             {reclassifiedCount > 0 && <> Re-classified <strong>{reclassifiedCount}</strong> obscure job titles using vector similarity.</>}
           </div>
           <button
             onClick={() => setShowTable(!showTable)}
             style={{ padding: "4px 12px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 11, color: C.textDim, cursor: "pointer" }}>
-            {showTable ? "Hide Predictions Table ▲" : "View Connection Predictions Table ▼"}
+            {showTable ? "Hide Seniority Table ▲" : "Show Seniority Table ▼"}
           </button>
         </div>
       )}
@@ -385,50 +457,282 @@ ${titlesJson}`;
       {/* Predictions Table */}
       {showTable && effectiveResults && (
         <div style={{ marginTop: 16, overflowX: "auto" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, gap: 12, flexWrap: "wrap" }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: C.text }}>
-              Connection Vector Results ({displayRows.length} shown)
+          {/* Option 1: Tab Navigation Bar */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+              {/* Filter Tabs */}
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", background: C.surface, padding: 4, borderRadius: 8, border: `1px solid ${C.border}` }}>
+                <button
+                  onClick={() => setActiveTab("all")}
+                  style={{
+                    padding: "5px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600, border: "none", cursor: "pointer", fontFamily: "inherit",
+                    background: activeTab === "all" ? C.accent : "transparent",
+                    color: activeTab === "all" ? "#ffffff" : C.textDim,
+                    display: "flex", alignItems: "center", gap: 6,
+                    transition: "all 0.15s ease"
+                  }}>
+                  📊 All Connections
+                  <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 99, background: activeTab === "all" ? "rgba(255,255,255,0.25)" : C.border, color: activeTab === "all" ? "#fff" : C.text }}>
+                    {tabCounts.all}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab("low_conf")}
+                  title="Show connections with ML match confidence below the threshold"
+                  style={{
+                    padding: "5px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                    background: activeTab === "low_conf" ? "rgba(245, 158, 11, 0.2)" : "transparent",
+                    color: activeTab === "low_conf" ? "#fbbf24" : C.textDim,
+                    border: activeTab === "low_conf" ? "1px solid rgba(245, 158, 11, 0.4)" : "1px solid transparent",
+                    display: "flex", alignItems: "center", gap: 6,
+                    transition: "all 0.15s ease"
+                  }}>
+                  🔍 Low Confidence (&lt; {threshold}%)
+                  <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 99, background: activeTab === "low_conf" ? "#f59e0b" : C.border, color: activeTab === "low_conf" ? "#000" : C.text, fontWeight: 700 }}>
+                    {tabCounts.low_conf}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab("overrides")}
+                  title="Show connections with active ML overrides or classification differences relative to Keyword rules"
+                  style={{
+                    padding: "5px 12px", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                    background: activeTab === "overrides" ? `${C.accent3}25` : "transparent",
+                    color: activeTab === "overrides" ? C.accent3 : C.textDim,
+                    border: activeTab === "overrides" ? `1px solid ${C.accent3}` : "1px solid transparent",
+                    display: "flex", alignItems: "center", gap: 6,
+                    transition: "all 0.15s ease"
+                  }}>
+                  ⚡ ML Overrides & Diffs
+                  <span style={{ fontSize: 10, padding: "1px 6px", borderRadius: 99, background: activeTab === "overrides" ? C.accent3 : C.border, color: activeTab === "overrides" ? "#fff" : C.text, fontWeight: 700 }}>
+                    {tabCounts.overrides}
+                  </span>
+                </button>
+              </div>
+
+              {/* Search Filter Input */}
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <input
+                  value={tableFilter}
+                  onChange={e => setTableFilter(e.target.value)}
+                  placeholder="Search connection, title, or company..."
+                  style={{
+                    padding: "5px 10px", background: C.surface, border: `1px solid ${C.border}`,
+                    borderRadius: 6, color: C.text, fontSize: 11, outline: "none", fontFamily: "inherit",
+                    minWidth: 180
+                  }}
+                />
+              </div>
             </div>
-            <input
-              value={tableFilter}
-              onChange={e => setTableFilter(e.target.value)}
-              placeholder="Search connection name, title, or company..."
-              style={{
-                padding: "6px 12px", background: C.surface, border: `1px solid ${C.border}`,
-                borderRadius: 6, color: C.text, fontSize: 12, outline: "none", fontFamily: "inherit",
-                minWidth: 240
-              }}
-            />
+
+            {/* Dedicated Toolbar Row for Overrides Management (ML Overrides & Diffs tab only) */}
+            {activeTab === "overrides" && (
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: 12,
+                background: C.surface,
+                padding: "8px 12px",
+                borderRadius: 8,
+                border: `1px solid ${C.border}`
+              }}>
+                <div style={{ fontSize: 11, color: C.textDim, fontWeight: 600 }}>
+                  ⚡ ML Inferred Seniority Overrides & Classification Differences
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <button
+                    onClick={handleApplyAllOverrides}
+                    title="Apply all ML Inferred Seniorities as overrides across the dataset"
+                    style={{
+                      padding: "5px 12px", background: `${C.accent3}22`, border: `1px solid ${C.accent3}`,
+                      borderRadius: 6, color: C.accent3, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                      fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4
+                    }}>
+                    ⚡ Apply All Overrides
+                  </button>
+
+                  <button
+                    onClick={handleRevertAllOverrides}
+                    title="Revert all overrides back to keyword mapping"
+                    style={{
+                      padding: "5px 12px", background: C.card, border: `1px solid ${C.border}`,
+                      borderRadius: 6, color: C.textDim, fontSize: 11, fontWeight: 600, cursor: "pointer",
+                      fontFamily: "inherit"
+                    }}>
+                    ↩ Revert All
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Dedicated Toolbar Row for Threshold, Quick Select & LLM Prompting (Low-Confidence tab only) */}
+            {activeTab === "low_conf" && (
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: 12,
+                background: C.surface,
+                padding: "8px 12px",
+                borderRadius: 8,
+                border: `1px solid ${C.border}`
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: C.textDim, fontWeight: 600 }}>
+                    <span>Threshold:</span>
+                    <select
+                      value={threshold}
+                      onChange={e => setThreshold(Number(e.target.value))}
+                      style={{
+                        padding: "4px 8px", background: C.card, border: `1px solid ${C.border}`,
+                        borderRadius: 6, color: C.text, fontSize: 11, fontWeight: 600, outline: "none",
+                        cursor: "pointer", fontFamily: "inherit"
+                      }}
+                    >
+                      <option value={50}>&lt; 50% Match</option>
+                      <option value={60}>&lt; 60% Match</option>
+                      <option value={70}>&lt; 70% Match</option>
+                      <option value={75}>&lt; 75% Match (Default)</option>
+                      <option value={80}>&lt; 80% Match</option>
+                      <option value={90}>&lt; 90% Match</option>
+                      <option value={100}>&lt; 100% Match (All)</option>
+                    </select>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 11, color: C.textDim }}>Quick Select:</span>
+                    <button
+                      onClick={() => selectTopN(25)}
+                      title="Select top 25 visible rows for LLM prompt"
+                      style={{
+                        padding: "3px 10px", background: C.card, border: `1px solid ${C.border}`,
+                        borderRadius: 6, color: C.text, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit"
+                      }}>
+                      Top 25
+                    </button>
+                    <button
+                      onClick={() => selectTopN(50)}
+                      title="Select top 50 visible rows for LLM prompt"
+                      style={{
+                        padding: "3px 10px", background: C.card, border: `1px solid ${C.border}`,
+                        borderRadius: 6, color: C.text, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit"
+                      }}>
+                      Top 50
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  onClick={copyLowConfPrompt}
+                  disabled={selectedContactsCount === 0}
+                  title={selectedContactsCount === 0 ? "Select contacts using checkboxes or Top 25/50 to copy LLM prompt" : "Copy LLM Prompt for selected contacts"}
+                  style={{
+                    padding: "5px 14px",
+                    background: selectedContactsCount === 0 ? C.border : copiedLowConfPrompt ? "#10b981" : C.accent,
+                    border: "none",
+                    borderRadius: 6,
+                    color: selectedContactsCount === 0 ? C.textDim : "#ffffff",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: selectedContactsCount === 0 ? "not-allowed" : "pointer",
+                    fontFamily: "inherit",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    boxShadow: selectedContactsCount === 0 ? "none" : "0 2px 4px rgba(0,0,0,0.15)",
+                    opacity: selectedContactsCount === 0 ? 0.7 : 1
+                  }}
+                >
+                  <span>{copiedLowConfPrompt ? "✓" : "📋"}</span>
+                  {copiedLowConfPrompt
+                    ? "Copied LLM Prompt!"
+                    : `Copy Prompt (${selectedContactsCount} Selected Contact${selectedContactsCount === 1 ? "" : "s"})`}
+                </button>
+              </div>
+            )}
+
+            {/* Connection count & Active Filter Status */}
+            <div style={{ fontSize: 11, color: C.textDim, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, padding: "0 2px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span>Showing <strong>{displayRows.length}</strong> connection records</span>
+                <span style={{ color: selectedContactsCount > 0 ? C.accent : C.textDim, fontWeight: 600 }}>
+                  ({selectedContactsCount} contact{selectedContactsCount === 1 ? "" : "s"} selected)
+                </span>
+              </div>
+
+              {activeTab === "low_conf" && (
+                <span style={{ color: "#fbbf24", fontWeight: 600 }}>
+                  🔍 ML similarity score &lt; {threshold}%
+                </span>
+              )}
+            </div>
           </div>
 
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
             <thead>
               <tr style={{ borderBottom: `1px solid ${C.border}`, textAlign: "left" }}>
-                <th style={{ padding: "8px 12px", color: C.textDim }}>Connection Name</th>
+                <th style={{ padding: "8px 8px", width: 36, textAlign: "center" }}>
+                  <input
+                    type="checkbox"
+                    checked={isAllFilteredSelected}
+                    onChange={toggleSelectAll}
+                    title="Select/Deselect All Visible Rows for LLM Prompt"
+                    style={{ cursor: "pointer" }}
+                  />
+                </th>
+                <th style={{ padding: "8px 12px", color: C.textDim, maxWidth: 180 }}>Connection Name</th>
                 <th style={{ padding: "8px 12px", color: C.textDim }}>Company</th>
                 <th style={{ padding: "8px 12px", color: C.textDim }}>Job Title</th>
-                <th style={{ padding: "8px 12px", color: C.textDim }}>TITLE_MAP Seniority</th>
-                <th style={{ padding: "8px 12px", color: C.textDim }}>Embedding Similarity Seniority</th>
-                <th style={{ padding: "8px 12px", color: C.textDim }}>Similarity Score</th>
+                <th style={{ padding: "8px 12px", color: C.textDim }}>Keyword Seniority</th>
+                <th style={{ padding: "8px 12px", color: C.textDim }}>ML Inferred Seniority</th>
+                <th style={{ padding: "8px 12px", color: C.textDim }}>ML Confidence</th>
+                <th style={{ padding: "8px 12px", color: C.textDim }}>Action / Override</th>
               </tr>
             </thead>
             <tbody>
               {displayRows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: 16, textAlign: "center", color: C.textDim }}>
+                  <td colSpan={8} style={{ padding: 16, textAlign: "center", color: C.textDim }}>
                     No connections match your filter query.
                   </td>
                 </tr>
               ) : (
                 displayRows.map((r) => {
+                  const isSelected = selectedTitles.has(r.title);
                   const isDiff = r.mapLabel !== r.embSeniority && r.embSeniority !== "—";
+                  const isOverridden = r.embRes && r.embRes.override !== false && r.embSeniority !== "—";
+                  const mapSenColor = SENIORITY.find(s => s.label === r.mapLabel)?.color || C.muted;
                   const senColor = SENIORITY.find(s => s.label === r.embSeniority)?.color || C.muted;
 
                   return (
-                    <tr key={r.id} style={{ borderBottom: `1px solid ${C.border}22`, background: isDiff ? "#f0fdf4" : "transparent" }}>
-                      <td style={{ padding: "8px 12px", fontWeight: 600, color: C.text, whiteSpace: "nowrap" }}>
+                    <tr key={r.id} style={{
+                      borderBottom: `1px solid ${C.border}22`,
+                      background: isSelected
+                        ? `${C.accent}18`
+                        : isOverridden
+                          ? "rgba(16, 185, 129, 0.12)"
+                          : isDiff
+                            ? "rgba(245, 158, 11, 0.08)"
+                            : "transparent"
+                    }}>
+                      <td style={{ padding: "8px 8px", textAlign: "center" }}>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelectTitle(r.title)}
+                          title="Select title for LLM Prompt"
+                          style={{ cursor: "pointer" }}
+                        />
+                      </td>
+                      <td style={{ padding: "8px 12px", fontWeight: 600, color: C.text, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={r.name}>
                         <a href={r.linkedinUrl} target="_blank" rel="noopener noreferrer"
-                          style={{ color: C.accent, textDecoration: "none" }}
+                          style={{ color: C.accent, textDecoration: "none", display: "inline-block", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", verticalAlign: "bottom" }}
                           onMouseEnter={e => e.currentTarget.style.textDecoration = "underline"}
                           onMouseLeave={e => e.currentTarget.style.textDecoration = "none"}
                         >
@@ -437,7 +741,17 @@ ${titlesJson}`;
                       </td>
                       <td style={{ padding: "8px 12px", color: C.textDim }}>{r.company}</td>
                       <td style={{ padding: "8px 12px", color: C.text, fontWeight: 500 }}>{r.title}</td>
-                      <td style={{ padding: "8px 12px", color: C.textDim }}>{r.mapLabel}</td>
+                      <td style={{ padding: "8px 12px" }}>
+                        <span style={{
+                          fontSize: 10, padding: "2px 8px", borderRadius: 99,
+                          background: `${mapSenColor}22`, color: mapSenColor,
+                          border: `1px solid ${mapSenColor}44`, fontWeight: 600,
+                          textDecoration: isOverridden ? "line-through" : "none",
+                          opacity: isOverridden ? 0.6 : 1
+                        }}>
+                          {r.mapLabel}
+                        </span>
+                      </td>
                       <td style={{ padding: "8px 12px" }}>
                         <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 99, background: `${senColor}22`, color: senColor, border: `1px solid ${senColor}44`, fontWeight: 600 }}>
                           {r.embSeniority}
@@ -448,6 +762,33 @@ ${titlesJson}`;
                           <span style={{ fontFamily: "'DM Mono', monospace", fontWeight: 600 }}>{r.confidence}%</span>
                         ) : "—"}
                       </td>
+                      <td style={{ padding: "8px 12px" }}>
+                        {r.embSeniority !== "—" ? (
+                          <button
+                            onClick={() => handleToggleOverride(r.title)}
+                            title={isOverridden ? "Revert override back to Keyword Seniority" : "Override Keyword Seniority with ML Seniority"}
+                            style={{
+                              padding: "3px 9px",
+                              background: isOverridden ? `${C.accent3}25` : C.surface,
+                              border: `1px solid ${isOverridden ? C.accent3 : C.border}`,
+                              borderRadius: 6,
+                              color: isOverridden ? C.accent3 : C.textDim,
+                              fontSize: 10,
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              fontFamily: "inherit",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
+                              whiteSpace: "nowrap"
+                            }}
+                          >
+                            {isOverridden ? "✓ Override Active" : "+ Assign ML Override"}
+                          </button>
+                        ) : (
+                          <span style={{ color: C.muted, fontSize: 11 }}>—</span>
+                        )}
+                      </td>
                     </tr>
                   );
                 })
@@ -457,237 +798,6 @@ ${titlesJson}`;
         </div>
       )}
 
-      {/* Low-Confidence Titles Table (Threshold Filterable) */}
-      <div style={{ marginTop: 28, paddingTop: 24, borderTop: `1px solid ${C.border}` }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>
-                🔍 Low-Confidence Titles (&lt; {threshold}% Match)
-              </span>
-              <span style={{
-                fontSize: 10, padding: "2px 8px", borderRadius: 99,
-                background: lowConfidenceTitles.length > 0 ? "#fef3c7" : "#ecfdf5",
-                color: lowConfidenceTitles.length > 0 ? "#92400e" : "#065f46",
-                border: `1px solid ${lowConfidenceTitles.length > 0 ? "#fcd34d" : "#a7f3d0"}`,
-                fontWeight: 700
-              }}>
-                {lowConfidenceTitles.length} Unique Titles Found
-              </span>
-            </div>
-            <div style={{ fontSize: 12, color: C.textDim, marginTop: 4 }}>
-              Job titles from your connections where vector similarity score is below the selected threshold.
-            </div>
-          </div>
-
-          {/* Controls: Threshold Selector & Selection Copy Prompt */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: C.textDim }}>
-              <span>Threshold:</span>
-              <select
-                value={threshold}
-                onChange={e => setThreshold(Number(e.target.value))}
-                style={{
-                  padding: "6px 10px", background: C.surface, border: `1px solid ${C.border}`,
-                  borderRadius: 6, color: C.text, fontSize: 12, fontWeight: 600, outline: "none",
-                  cursor: "pointer", fontFamily: "inherit"
-                }}
-              >
-                <option value={50}>&lt; 50% Match</option>
-                <option value={60}>&lt; 60% Match</option>
-                <option value={70}>&lt; 70% Match</option>
-                <option value={75}>&lt; 75% Match (Default)</option>
-                <option value={80}>&lt; 80% Match</option>
-                <option value={85}>&lt; 85% Match</option>
-                <option value={90}>&lt; 90% Match</option>
-                <option value={95}>&lt; 95% Match</option>
-                <option value={100}>&lt; 100% Match (All)</option>
-              </select>
-            </div>
-
-            {effectiveResults && lowConfidenceTitles.length > 0 && (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <div style={{ display: "flex", gap: 4 }}>
-                  <button
-                    onClick={() => selectTopN(25)}
-                    title="Select the 25 titles with the lowest similarity scores"
-                    style={{
-                      padding: "4px 8px", background: C.surface, border: `1px solid ${C.border}`,
-                      borderRadius: 6, color: C.textDim, fontSize: 11, cursor: "pointer", fontFamily: "inherit"
-                    }}>
-                    Top 25
-                  </button>
-                  <button
-                    onClick={() => selectTopN(50)}
-                    title="Select the 50 titles with the lowest similarity scores"
-                    style={{
-                      padding: "4px 8px", background: C.surface, border: `1px solid ${C.border}`,
-                      borderRadius: 6, color: C.textDim, fontSize: 11, cursor: "pointer", fontFamily: "inherit"
-                    }}>
-                    Top 50
-                  </button>
-                </div>
-
-                <button
-                  onClick={copyLowConfPrompt}
-                  disabled={selectedList.length === 0}
-                  style={{
-                    padding: "6px 14px",
-                    background: selectedList.length === 0 ? C.border : copiedLowConfPrompt ? "#10b981" : C.accent,
-                    border: "none", borderRadius: 6, color: "#ffffff", fontSize: 12, fontWeight: 600,
-                    cursor: selectedList.length === 0 ? "not-allowed" : "pointer",
-                    fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6,
-                    boxShadow: "0 2px 4px rgba(0,0,0,0.12)", opacity: selectedList.length === 0 ? 0.6 : 1
-                  }}
-                >
-                  <span>{copiedLowConfPrompt ? "✓" : "📋"}</span>
-                  {copiedLowConfPrompt
-                    ? "Copied Prompt!"
-                    : selectedList.length === 0
-                      ? "Select Titles to Copy Prompt"
-                      : `Copy Prompt for ${selectedList.length} Selected Title${selectedList.length === 1 ? "" : "s"}`}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {!effectiveResults ? (
-          <div style={{ padding: 28, textAlign: "center", background: C.surface, borderRadius: 10, border: `1px dashed ${C.border}`, color: C.textDim, fontSize: 13 }}>
-            {loading ? (
-              <div>
-                <div style={{ fontWeight: 600, color: C.text, marginBottom: 6 }}>⏳ Calculating Cosine Embedding Similarity...</div>
-                <div>{progressMsg} ({progressPct}%)</div>
-              </div>
-            ) : (
-              <div>
-                <div style={{ fontWeight: 600, color: C.text, marginBottom: 6 }}>
-                  ⚡ Vector similarity classification is ready for {uniqueTitles.length} unique titles
-                </div>
-                <div style={{ fontSize: 12, color: C.textDim, marginBottom: 14 }}>
-                  Click below to manually trigger client-side vector embedding similarity classification.
-                </div>
-                <button
-                  onClick={runClassifier}
-                  style={{
-                    padding: "8px 20px", background: C.accent3, border: "none", borderRadius: 8,
-                    color: "#ffffff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-                    display: "inline-flex", alignItems: "center", gap: 8, boxShadow: "0 2px 6px rgba(0,0,0,0.18)"
-                  }}
-                >
-                  <span>⚡</span> Run Embedding Classification ({uniqueTitles.length} Titles)
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, gap: 12, flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <span style={{ fontSize: 11, color: C.textDim, fontWeight: 500 }}>
-                  Showing {filteredLowConfTitles.length} of {lowConfidenceTitles.length} low-confidence titles
-                </span>
-                <span style={{ fontSize: 11, color: C.accent, fontWeight: 600 }}>
-                  ({selectedList.length} selected for prompt)
-                </span>
-              </div>
-              <input
-                value={lowConfFilter}
-                onChange={e => setLowConfFilter(e.target.value)}
-                placeholder="Filter low-confidence titles..."
-                style={{
-                  padding: "6px 12px", background: C.surface, border: `1px solid ${C.border}`,
-                  borderRadius: 6, color: C.text, fontSize: 12, outline: "none", fontFamily: "inherit",
-                  minWidth: 220
-                }}
-              />
-            </div>
-
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                <thead>
-                  <tr style={{ borderBottom: `1px solid ${C.border}`, textAlign: "left", background: C.surface }}>
-                    <th style={{ padding: "10px 8px", width: 40, textAlign: "center" }}>
-                      <input
-                        type="checkbox"
-                        checked={isAllFilteredSelected}
-                        onChange={toggleSelectAll}
-                        title="Select/Deselect All Visible Titles"
-                        style={{ cursor: "pointer" }}
-                      />
-                    </th>
-                    <th style={{ padding: "10px 12px", color: C.textDim, fontWeight: 600 }}>Raw Job Title</th>
-                    <th style={{ padding: "10px 12px", color: C.textDim, fontWeight: 600 }}>Connections</th>
-                    <th style={{ padding: "10px 12px", color: C.textDim, fontWeight: 600 }}>Assigned Seniority</th>
-                    <th style={{ padding: "10px 12px", color: C.textDim, fontWeight: 600 }}>Closest Prototype Match</th>
-                    <th style={{ padding: "10px 12px", color: C.textDim, fontWeight: 600 }}>Similarity Score</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredLowConfTitles.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} style={{ padding: 20, textAlign: "center", color: C.textDim }}>
-                        {lowConfidenceTitles.length === 0
-                          ? `🎉 Great news! All vector similarity scores are higher than ${threshold}%.`
-                          : "No low-confidence titles match your search filter."}
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredLowConfTitles.map((item, idx) => {
-                      const isSelected = selectedTitles.has(item.title);
-                      const senColor = SENIORITY.find(s => s.label === item.seniority)?.color || C.muted;
-                      const scoreColor = item.confidence < 50 ? "#ef4444" : item.confidence < 70 ? "#f97316" : "#eab308";
-
-                      return (
-                        <tr
-                          key={idx + "-" + item.title}
-                          style={{
-                            borderBottom: `1px solid ${C.border}22`,
-                            background: isSelected ? `${C.accent}08` : "transparent"
-                          }}
-                        >
-                          <td style={{ padding: "10px 8px", textAlign: "center" }}>
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => toggleSelectTitle(item.title)}
-                              style={{ cursor: "pointer" }}
-                            />
-                          </td>
-                          <td style={{ padding: "10px 12px", color: C.text, fontWeight: 600 }}>
-                            {item.title}
-                          </td>
-                          <td style={{ padding: "10px 12px", color: C.textDim, fontWeight: 600 }}>
-                            {item.count} {item.count === 1 ? "conn" : "conns"}
-                          </td>
-                          <td style={{ padding: "10px 12px" }}>
-                            <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 99, background: `${senColor}22`, color: senColor, border: `1px solid ${senColor}44`, fontWeight: 600 }}>
-                              {item.seniority}
-                            </span>
-                          </td>
-                          <td style={{ padding: "10px 12px", color: C.textDim, fontFamily: "'DM Mono', monospace", fontSize: 11 }}>
-                            {item.closestMatch}
-                          </td>
-                          <td style={{ padding: "10px 12px" }}>
-                            <span style={{
-                              fontSize: 11, padding: "2px 8px", borderRadius: 6,
-                              background: `${scoreColor}15`, color: scoreColor,
-                              border: `1px solid ${scoreColor}40`, fontWeight: 700,
-                              fontFamily: "'DM Mono', monospace"
-                            }}>
-                              {item.confidence}%
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   );
 }

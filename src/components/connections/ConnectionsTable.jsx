@@ -6,7 +6,6 @@ const COLUMNS = [
   { key: "name",         label: "Name",         sort: r => `${r["First Name"]} ${r["Last Name"]}`.toLowerCase() },
   { key: "company",      label: "Company",       sort: r => (r["Company"] || "").toLowerCase() },
   { key: "position",     label: "Position",      sort: r => (r["Position"] || "").toLowerCase() },
-  { key: "email",        label: "Email",         sort: r => r["Email Address"] ? 0 : 1 },
   { key: "connectedOn",  label: "Connected On",  sort: r => r["Connected On"] || "" },
   { key: "seniority",    label: "Seniority",     sort: r => classifySeniority(r["Position"]) },
 ];
@@ -26,10 +25,16 @@ export function ConnectionsTable({ data, mlResults }) {
 
   // Enrich data with computed seniority
   const classifiedData = useMemo(() => {
-    return data.map(r => ({
-      ...r,
-      _seniority: classifySeniority(r["Position_raw"] || r["Position"], mlResults)
-    }));
+    return data.map(r => {
+      const rawTitle = (r["Position_raw"] || r["Position"] || "").trim();
+      const finalSen = classifySeniority(rawTitle, mlResults);
+      const isOverridden = mlResults && mlResults[rawTitle] && mlResults[rawTitle].override !== false;
+      return {
+        ...r,
+        _seniority: finalSen,
+        _isOverridden: isOverridden
+      };
+    });
   }, [data, mlResults]);
 
   // Compute total count per seniority category
@@ -50,7 +55,6 @@ export function ConnectionsTable({ data, mlResults }) {
     { key: "name",         label: "Name",         sort: r => `${r["First Name"]} ${r["Last Name"]}`.toLowerCase() },
     { key: "company",      label: "Company",       sort: r => (r["Company"] || "").toLowerCase() },
     { key: "position",     label: "Position",      sort: r => (r["Position_raw"] || r["Position"] || "").toLowerCase() },
-    { key: "email",        label: "Email",         sort: r => r["Email Address"] ? 0 : 1 },
     { key: "connectedOn",  label: "Connected On",  sort: r => r["Connected On"] || "" },
     { key: "seniority",    label: "Seniority",     sort: r => r._seniority },
   ], []);
@@ -218,8 +222,8 @@ export function ConnectionsTable({ data, mlResults }) {
               const senColor = SENIORITY.find(s => s.label === sen)?.color || C.muted;
               const isNormalized = r["Position_raw"] && r["Position_raw"] !== r["Position"];
               return (
-                <tr key={i} style={{ borderBottom: `1px solid ${C.border}22`, transition: "background 0.1s" }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
+                <tr key={i} style={{ borderBottom: `1px solid ${C.border}33`, transition: "background 0.1s" }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
                   <td style={{ padding: "9px 12px", whiteSpace: "nowrap" }}>
@@ -248,9 +252,6 @@ export function ConnectionsTable({ data, mlResults }) {
                       </div>
                     )}
                   </td>
-                  <td style={{ padding: "9px 12px", color: r["Email Address"] ? C.accent : C.muted }}>
-                    {r["Email Address"] ? "✓" : "–"}
-                  </td>
                   <td style={{ padding: "9px 12px", color: C.textDim, whiteSpace: "nowrap" }}>{r["Connected On"]}</td>
                   <td style={{ padding: "9px 12px" }}>
                     <span style={{
@@ -258,6 +259,16 @@ export function ConnectionsTable({ data, mlResults }) {
                       background: `${senColor}22`, color: senColor,
                       border: `1px solid ${senColor}44`, whiteSpace: "nowrap"
                     }}>{sen}</span>
+                    {r._isOverridden && (
+                      <span title="Seniority assigned via ML Vector Override" style={{
+                        fontSize: 9, padding: "1px 5px", borderRadius: 4,
+                        background: `${C.accent3}22`, color: C.accent3,
+                        border: `1px solid ${C.accent3}44`, marginLeft: 6,
+                        fontWeight: 700, whiteSpace: "nowrap"
+                      }}>
+                        ⚡ ML
+                      </span>
+                    )}
                   </td>
                 </tr>
               );

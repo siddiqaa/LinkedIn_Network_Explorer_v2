@@ -65,6 +65,31 @@ export async function loadExtractorModel() {
   return extractorInstance;
 }
 
+let preloadingPromise = null;
+
+/**
+ * Pre-load feature extraction model and compute TITLE_MAP prototype vectors into memory at startup
+ */
+export async function preloadModel() {
+  if (preloadingPromise) return preloadingPromise;
+
+  preloadingPromise = (async () => {
+    try {
+      console.log("[Embedding ML] Warmup initiated: Pre-loading model & TITLE_MAP prototype embeddings...");
+      const extractor = await loadExtractorModel();
+      await getPrototypeEmbeddings(extractor);
+      console.log("[Embedding ML] Startup pre-loading complete. ML classifier ready.");
+      return true;
+    } catch (err) {
+      console.warn("[Embedding ML] Warmup pre-loading failed:", err);
+      preloadingPromise = null;
+      return false;
+    }
+  })();
+
+  return preloadingPromise;
+}
+
 /**
  * Helper to compute dot product of two normalized Float32Arrays
  */
@@ -84,16 +109,29 @@ async function getPrototypeEmbeddings(extractor) {
 
   console.log("[Embedding ML] Generating prototype embeddings from TITLE_MAP entries...");
   const tmPrototypes = generateTitleMapPrototypes();
-
   const texts = tmPrototypes.map(p => p.text);
-  const output = await extractor(texts, { pooling: 'mean', normalize: true });
 
-  prototypeEmbeddings = tmPrototypes.map((p, idx) => {
-    const vec = new Float32Array(output[idx].data);
-    return { seniority: p.seniority, group: p.group, vector: vec };
-  });
+  const numPrototypes = texts.length;
+  const DIM = 384;
+  const prototypeMatrix = new Float32Array(numPrototypes * DIM);
 
-  console.log(`[Embedding ML] Successfully computed ${prototypeEmbeddings.length} prototype vectors from TITLE_MAP canonical groups.`);
+  // Extract prototype vectors in mini-batches of 32
+  const batchSize = 32;
+  for (let i = 0; i < texts.length; i += batchSize) {
+    const chunk = texts.slice(i, i + batchSize);
+    const output = await extractor(chunk, { pooling: 'mean', normalize: true });
+    for (let j = 0; j < chunk.length; j++) {
+      const vec = new Float32Array(output[j].data);
+      prototypeMatrix.set(vec, (i + j) * DIM);
+    }
+  }
+
+  prototypeEmbeddings = {
+    tmPrototypes,
+    matrix: prototypeMatrix
+  };
+
+  console.log(`[Embedding ML] Successfully computed & packed ${numPrototypes} prototype vectors into contiguous Float32Array matrix (${(prototypeMatrix.byteLength / 1024).toFixed(1)} KB).`);
 
   return prototypeEmbeddings;
 }
@@ -224,28 +262,48 @@ export async function classifyTitlesBatchEmbeddings(titles, onBatchProgress, max
 }
 
 /**
- * Compare title vector against sub-prototype vectors and return top matching seniority + similarity score (max-pooled)
+ * Compare title vector against contiguous prototypeMatrix (N x 384) using 8x unrolled loop SIMD dot product
  */
-function matchVectorToSeniority(titleVec, subPrototypes, rawTitle = "") {
-  let bestSeniority = "Unknown / Other";
+function matchVectorToSeniority(titleVec, prototypeData, rawTitle = "") {
+  const { tmPrototypes, matrix: M } = prototypeData;
+  const N = tmPrototypes.length;
+  const DIM = 384;
+
   let maxSim = -1;
-  let bestGroup = "";
+  let bestIdx = 0;
   const seniorityScores = {}; // seniority -> maxSim
 
-  subPrototypes.forEach(proto => {
-    const sim = dotProduct(titleVec, proto.vector);
-    const sen = proto.seniority;
+  // Unrolled Float32Array matrix dot product over contiguous memory
+  for (let i = 0; i < N; i++) {
+    const offset = i * DIM;
+    let dot = 0;
 
-    if (!seniorityScores[sen] || sim > seniorityScores[sen]) {
-      seniorityScores[sen] = sim;
+    // 8x loop unrolling on 384-dimensional vector for CPU hardware vectorization
+    for (let j = 0; j < DIM; j += 8) {
+      dot += titleVec[j] * M[offset + j]
+           + titleVec[j + 1] * M[offset + j + 1]
+           + titleVec[j + 2] * M[offset + j + 2]
+           + titleVec[j + 3] * M[offset + j + 3]
+           + titleVec[j + 4] * M[offset + j + 4]
+           + titleVec[j + 5] * M[offset + j + 5]
+           + titleVec[j + 6] * M[offset + j + 6]
+           + titleVec[j + 7] * M[offset + j + 7];
     }
 
-    if (sim > maxSim) {
-      maxSim = sim;
-      bestSeniority = sen;
-      bestGroup = proto.group;
+    const sen = tmPrototypes[i].seniority;
+    if (!seniorityScores[sen] || dot > seniorityScores[sen]) {
+      seniorityScores[sen] = dot;
     }
-  });
+
+    if (dot > maxSim) {
+      maxSim = dot;
+      bestIdx = i;
+    }
+  }
+
+  const bestProto = tmPrototypes[bestIdx];
+  let bestSeniority = bestProto ? bestProto.seniority : "Unknown / Other";
+  let bestGroup = bestProto ? bestProto.group : "";
 
   // Convert similarity [-1, 1] to confidence percentage [0, 100]
   const confidence = Math.max(0, Math.min(100, Math.round(maxSim * 100)));
