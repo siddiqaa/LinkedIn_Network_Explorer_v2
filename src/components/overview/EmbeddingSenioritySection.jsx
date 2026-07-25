@@ -13,7 +13,6 @@ export function EmbeddingSenioritySection({ data, mlResults, onResultsGenerated 
   const [progressMsg, setProgressMsg] = useState("");
   const [progressPct, setProgressPct] = useState(0);
   const [error, setError] = useState(null);
-  const [showTable, setShowTable] = useState(true);
   const [showExplanation, setShowExplanation] = useState(false);
   const [tableFilter, setTableFilter] = useState("");
   const [sampledConns, setSampledConns] = useState([]);
@@ -64,7 +63,6 @@ export function EmbeddingSenioritySection({ data, mlResults, onResultsGenerated 
         onResultsGenerated(merged);
       }
       setLoading(false);
-      setShowTable(true);
     } catch (err) {
       console.error("[Classifier UI] Execution error:", err);
       setError("Failed to run Transformers.js model: " + (err.message || String(err)));
@@ -163,11 +161,15 @@ ${titlesJson}`;
   }, [effectiveResults, uniqueTitles]);
 
   const handleToggleOverride = (title) => {
-    if (!effectiveResults || !effectiveResults[title]) return;
-    const current = effectiveResults[title];
+    const current = (effectiveResults && effectiveResults[title]) || {
+      seniority: classifySeniority(title),
+      confidence: 100,
+      rawLabel: title,
+      override: false
+    };
     const isCurrentlyOverridden = current.override !== false;
     const updated = {
-      ...effectiveResults,
+      ...(effectiveResults || {}),
       [title]: {
         ...current,
         override: !isCurrentlyOverridden
@@ -440,23 +442,23 @@ ${titlesJson}`;
       <SeniorityChart data={data} mlResults={effectiveResults} useML={true} />
 
       {/* ML Summary Callout */}
-      {effectiveResults && (
-        <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-          <div style={{ fontSize: 12, color: C.text }}>
-            <strong>Seniority Classification Comparison:</strong> Evaluated batch of <strong>{sampledConns.length || data?.length || Object.keys(effectiveResults).length}</strong> connections.
-            {reclassifiedCount > 0 && <> Re-classified <strong>{reclassifiedCount}</strong> obscure job titles using vector similarity.</>}
-          </div>
-          <button
-            onClick={() => setShowTable(!showTable)}
-            style={{ padding: "4px 12px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 11, color: C.textDim, cursor: "pointer" }}>
-            {showTable ? "Hide Seniority Table ▲" : "Show Seniority Table ▼"}
-          </button>
+      <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+        <div style={{ fontSize: 12, color: C.text }}>
+          {effectiveResults ? (
+            <>
+              <strong>Seniority Classification Comparison:</strong> Evaluated batch of <strong>{sampledConns.length || data?.length || Object.keys(effectiveResults).length}</strong> connections.
+              {reclassifiedCount > 0 && <> Re-classified <strong>{reclassifiedCount}</strong> obscure job titles using vector similarity.</>}
+            </>
+          ) : (
+            <>
+              <strong>Seniority Classification Review Table:</strong> Showing <strong>{allPool.length}</strong> connections categorized by Keyword/Rule Seniority. Click "⚡ Classify Unknowns Only" or "🧠 Classify All Unique Titles" above to run ML embeddings.
+            </>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Predictions Table */}
-      {showTable && effectiveResults && (
-        <div style={{ marginTop: 16, overflowX: "auto" }}>
+      <div style={{ marginTop: 16, overflowX: "auto" }}>
           {/* Option 1: Tab Navigation Bar */}
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
@@ -796,7 +798,6 @@ ${titlesJson}`;
             </tbody>
           </table>
         </div>
-      )}
 
     </div>
   );
