@@ -1,6 +1,7 @@
 import { pipeline, env } from '@xenova/transformers';
 import { TITLE_MAP } from '../data/titleMap';
 import { classifyByKeyword } from '../data/keywordMap';
+import { classifyDepartmentByKeyword } from '../data/departmentMap';
 
 env.allowLocalModels = false;
 
@@ -172,10 +173,12 @@ export async function classifyTitlesBatchEmbeddings(titles, onBatchProgress, max
 
     if (directVal) {
       const sen = typeof directVal === 'object' ? directVal.seniority : null;
+      const dept = typeof directVal === 'object' ? directVal.department : classifyDepartmentByKeyword(title).department;
       const canonical = typeof directVal === 'object' ? (directVal.canonicalTitle || directVal.canonical) : directVal;
       if (sen && sen !== "Unknown / Other") {
         results[title] = {
           seniority: sen,
+          department: dept || "Other / Unknown",
           group: `Direct Map (${canonical || title})`,
           confidence: 100,
           rawLabel: `${sen} → Direct Map: ${canonical || title}`,
@@ -321,8 +324,11 @@ function matchVectorToSeniority(titleVec, prototypeData, rawTitle = "") {
     }
   }
 
+  const deptResult = classifyDepartmentByKeyword(rawTitle);
+
   return {
     seniority: finalSeniority,
+    department: deptResult.department || "Other / Unknown",
     group: bestGroup,
     confidence,
     rawLabel: keywordMatch

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { C, SENIORITY } from "../../constants/theme";
 import { classifySeniority } from "../../utils/seniorityClassifier";
+import { classifyDepartment } from "../../utils/departmentClassifier";
 import { classifyTitlesBatchEmbeddings } from "../../lib/embeddingClassifier";
 import { SeniorityChart } from "./SeniorityChart";
 
@@ -74,6 +75,94 @@ export function EmbeddingSenioritySection({ data, mlResults, onResultsGenerated 
   const [lowConfFilter, setLowConfFilter] = useState("");
   const [copiedLowConfPrompt, setCopiedLowConfPrompt] = useState(false);
   const [selectedTitles, setSelectedTitles] = useState(new Set());
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [jsonInput, setJsonInput] = useState("");
+  const [importError, setImportError] = useState("");
+  const [importSuccess, setImportSuccess] = useState("");
+
+  const handleApplyLlmJson = () => {
+    setImportError("");
+    setImportSuccess("");
+    if (!jsonInput.trim()) {
+      setImportError("Please paste the JSON response before applying.");
+      return;
+    }
+
+    try {
+      let cleanText = jsonInput.trim();
+      if (cleanText.startsWith("```")) {
+        cleanText = cleanText.replace(/^```(json)?\n?/, "").replace(/\n?```$/, "");
+      }
+
+      const parsed = JSON.parse(cleanText);
+      let count = 0;
+      const updated = { ...(effectiveResults || {}) };
+
+      if (Array.isArray(parsed)) {
+        parsed.forEach(item => {
+          const raw = item.title || item.rawTitle || item.jobTitle;
+          if (raw) {
+            updated[raw] = {
+              seniority: item.seniority || item.seniorityTier || "Unknown / Other",
+              department: item.department || item.functionalDepartment || "Other / Unknown",
+              canonicalTitle: item.canonicalTitle || raw,
+              confidence: 100,
+              override: true,
+              rawLabel: "LLM Quality Classification",
+              source: "llm"
+            };
+            count++;
+          }
+        });
+      } else if (typeof parsed === "object" && parsed !== null) {
+        Object.entries(parsed).forEach(([rawTitle, item]) => {
+          if (typeof item === "object" && item !== null) {
+            updated[rawTitle] = {
+              seniority: item.seniority || item.seniorityTier || "Unknown / Other",
+              department: item.department || item.functionalDepartment || "Other / Unknown",
+              canonicalTitle: item.canonicalTitle || rawTitle,
+              confidence: 100,
+              override: true,
+              rawLabel: "LLM Quality Classification",
+              source: "llm"
+            };
+            count++;
+          } else if (typeof item === "string") {
+            updated[rawTitle] = {
+              seniority: item,
+              department: classifyDepartment(rawTitle),
+              canonicalTitle: rawTitle,
+              confidence: 100,
+              override: true,
+              rawLabel: "LLM Quality Classification",
+              source: "llm"
+            };
+            count++;
+          }
+        });
+      }
+
+      if (count === 0) {
+        setImportError("No valid title mappings found in pasted JSON. Ensure keys match raw job titles.");
+        return;
+      }
+
+      setEmbeddingResults(updated);
+      if (onResultsGenerated) {
+        onResultsGenerated(updated);
+      }
+
+      setImportSuccess(`Successfully applied LLM classifications for ${count} job titles!`);
+      setTimeout(() => {
+        setShowImportModal(false);
+        setJsonInput("");
+        setImportSuccess("");
+      }, 1500);
+
+    } catch (err) {
+      setImportError("Invalid JSON format: " + err.message);
+    }
+  };
 
   const titleCounts = useMemo(() => {
     if (!data) return {};
@@ -126,9 +215,12 @@ export function EmbeddingSenioritySection({ data, mlResults, onResultsGenerated 
     const titlesToCopy = Array.from(selectedTitles);
 
     const titlesJson = JSON.stringify(titlesToCopy, null, 2);
-    const prompt = `You are an expert HR Data Scientist.
+    const prompt = `You are an expert HR Data Scientist & Organizational Analyst.
 I have ${titlesToCopy.length} raw job titles from my LinkedIn network that matched our vector similarity model with low confidence (< ${threshold}% similarity).
-Normalize each title to a canonical title and strictly assign one of the following seniorities:
+
+Normalize each title to a canonical title, assign a seniority tier, and assign a functional department.
+
+1. Seniority Tiers (strictly choose one):
 - "C-Suite / Founder"
 - "VP / Director"
 - "Manager / Lead"
@@ -137,7 +229,25 @@ Normalize each title to a canonical title and strictly assign one of the followi
 - "Retired"
 - "Unknown / Other"
 
-Return a single JSON object mapping raw titles directly to { "canonicalTitle": "...", "seniority": "..." }.
+2. Functional Departments (strictly choose one):
+- "Engineering & Technology"
+- "Product & Design"
+- "Sales & Business Development"
+- "Marketing & Communications"
+- "Finance & Accounting"
+- "People, HR & Recruiting"
+- "Operations & Logistics"
+- "Legal, Risk & Compliance"
+- "Customer Success & Support"
+- "Executive & General Management"
+- "Other / Unknown"
+
+Return a single JSON object mapping each raw title directly to:
+{
+  "canonicalTitle": "<Normalized Job Title>",
+  "seniority": "<Seniority Tier>",
+  "department": "<Functional Department>"
+}
 
 Raw Titles (${titlesToCopy.length} titles):
 ${titlesJson}`;
@@ -225,15 +335,21 @@ ${titlesJson}`;
       const company = conn["Company"] || "—";
       const title = (conn["Position_raw"] || conn["Position"] || "").trim();
       const mapLabel = classifySeniority(title);
+      const mapDept = classifyDepartment(title);
       const embRes = effectiveResults ? effectiveResults[title] : null;
+      const embSeniority = embRes?.seniority || mapLabel;
+      const embDept = embRes?.department || mapDept;
+
       return {
         id: idx + "-" + name + "-" + title,
         name,
         company,
         title,
         mapLabel,
+        mapDept,
         embRes,
-        embSeniority: embRes?.seniority || "—",
+        embSeniority: embSeniority || "—",
+        embDept: embDept || "—",
         confidence: embRes?.confidence ?? null,
         rawLabel: embRes?.rawLabel || "—",
         linkedinUrl: conn["URL"] || `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(name + " " + company)}`
@@ -630,32 +746,55 @@ ${titlesJson}`;
                   </div>
                 </div>
 
-                <button
-                  onClick={copyLowConfPrompt}
-                  disabled={selectedContactsCount === 0}
-                  title={selectedContactsCount === 0 ? "Select contacts using checkboxes or Top 25/50 to copy LLM prompt" : "Copy LLM Prompt for selected contacts"}
-                  style={{
-                    padding: "5px 14px",
-                    background: selectedContactsCount === 0 ? C.border : copiedLowConfPrompt ? "#10b981" : C.accent,
-                    border: "none",
-                    borderRadius: 6,
-                    color: selectedContactsCount === 0 ? C.textDim : "#ffffff",
-                    fontSize: 11,
-                    fontWeight: 600,
-                    cursor: selectedContactsCount === 0 ? "not-allowed" : "pointer",
-                    fontFamily: "inherit",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    boxShadow: selectedContactsCount === 0 ? "none" : "0 2px 4px rgba(0,0,0,0.15)",
-                    opacity: selectedContactsCount === 0 ? 0.7 : 1
-                  }}
-                >
-                  <span>{copiedLowConfPrompt ? "✓" : "📋"}</span>
-                  {copiedLowConfPrompt
-                    ? "Copied LLM Prompt!"
-                    : `Copy Prompt (${selectedContactsCount} Selected Contact${selectedContactsCount === 1 ? "" : "s"})`}
-                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <button
+                    onClick={copyLowConfPrompt}
+                    disabled={selectedContactsCount === 0}
+                    title={selectedContactsCount === 0 ? "Select contacts using checkboxes or Top 25/50 to copy LLM prompt" : "Copy LLM Prompt for selected contacts"}
+                    style={{
+                      padding: "5px 14px",
+                      background: selectedContactsCount === 0 ? C.border : copiedLowConfPrompt ? "#10b981" : C.accent,
+                      border: "none",
+                      borderRadius: 6,
+                      color: selectedContactsCount === 0 ? C.textDim : "#ffffff",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      cursor: selectedContactsCount === 0 ? "not-allowed" : "pointer",
+                      fontFamily: "inherit",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      boxShadow: selectedContactsCount === 0 ? "none" : "0 2px 4px rgba(0,0,0,0.15)",
+                      opacity: selectedContactsCount === 0 ? 0.7 : 1
+                    }}
+                  >
+                    <span>{copiedLowConfPrompt ? "✓" : "📋"}</span>
+                    {copiedLowConfPrompt
+                      ? "Copied LLM Prompt!"
+                      : `Copy Prompt (${selectedContactsCount} Selected Contact${selectedContactsCount === 1 ? "" : "s"})`}
+                  </button>
+
+                  <button
+                    onClick={() => setShowImportModal(true)}
+                    title="Paste JSON returned by LLM to apply high quality Seniority and Department classifications"
+                    style={{
+                      padding: "5px 12px",
+                      background: C.surface,
+                      border: `1px solid ${C.accent}`,
+                      borderRadius: 6,
+                      color: C.accent,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6
+                    }}
+                  >
+                    <span>📥</span> Import LLM JSON
+                  </button>
+                </div>
               </div>
             )}
 
@@ -798,6 +937,77 @@ ${titlesJson}`;
             </tbody>
           </table>
         </div>
+
+      {/* LLM JSON Import Modal */}
+      {showImportModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+          background: "rgba(0, 0, 0, 0.75)", backdropFilter: "blur(4px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 9999, padding: 20
+        }}>
+          <div style={{
+            background: C.card, border: `1px solid ${C.border}`, borderRadius: 12,
+            padding: 24, maxWidth: 650, width: "100%", color: C.text,
+            boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.5)"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: C.text }}>
+                📥 Import LLM Classification Results
+              </div>
+              <button
+                onClick={() => setShowImportModal(false)}
+                style={{ background: "none", border: "none", color: C.textDim, fontSize: 18, cursor: "pointer" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p style={{ fontSize: 12, color: C.textDim, marginBottom: 12, lineHeight: 1.5 }}>
+              Paste the JSON response returned by your LLM (Gemini, ChatGPT, Claude) after running the prompt. This will update raw job titles with canonical titles, seniority tiers, and functional departments.
+            </p>
+
+            <textarea
+              value={jsonInput}
+              onChange={e => setJsonInput(e.target.value)}
+              placeholder={`{\n  "Senior Developer": {\n    "canonicalTitle": "Software Engineer",\n    "seniority": "Senior / Mid",\n    "department": "Engineering & Technology"\n  }\n}`}
+              rows={10}
+              style={{
+                width: "100%", padding: 12, background: C.surface, border: `1px solid ${C.border}`,
+                borderRadius: 8, color: C.text, fontSize: 12, fontFamily: "'DM Mono', monospace",
+                outline: "none", resize: "vertical", marginBottom: 12
+              }}
+            />
+
+            {importError && (
+              <div style={{ padding: "8px 12px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#fca5a5", borderRadius: 6, fontSize: 12, marginBottom: 12 }}>
+                {importError}
+              </div>
+            )}
+
+            {importSuccess && (
+              <div style={{ padding: "8px 12px", background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(16, 185, 129, 0.3)", color: "#6ee7b7", borderRadius: 6, fontSize: 12, marginBottom: 12 }}>
+                {importSuccess}
+              </div>
+            )}
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <button
+                onClick={() => setShowImportModal(false)}
+                style={{ padding: "7px 16px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 6, color: C.textDim, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleApplyLlmJson}
+                style={{ padding: "7px 18px", background: C.accent, border: "none", borderRadius: 6, color: "#ffffff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+              >
+                Apply Classifications
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

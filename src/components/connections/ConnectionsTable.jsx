@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { C, SENIORITY } from "../../constants/theme";
 import { classifySeniority } from "../../utils/seniorityClassifier";
+import { classifyDepartment } from "../../utils/departmentClassifier";
 
 const COLUMNS = [
   { key: "name",         label: "Name",         sort: r => `${r["First Name"]} ${r["Last Name"]}`.toLowerCase() },
@@ -23,15 +24,17 @@ export function ConnectionsTable({ data, mlResults }) {
   const [sortDir, setSortDir] = useState("asc");
   const PER_PAGE = 200;
 
-  // Enrich data with computed seniority
+  // Enrich data with computed seniority & department
   const classifiedData = useMemo(() => {
     return data.map(r => {
       const rawTitle = (r["Position_raw"] || r["Position"] || "").trim();
       const finalSen = classifySeniority(rawTitle, mlResults);
+      const finalDept = classifyDepartment(rawTitle, mlResults);
       const isOverridden = mlResults && mlResults[rawTitle] && mlResults[rawTitle].override !== false;
       return {
         ...r,
         _seniority: finalSen,
+        _department: finalDept,
         _isOverridden: isOverridden
       };
     });
@@ -55,8 +58,9 @@ export function ConnectionsTable({ data, mlResults }) {
     { key: "name",         label: "Name",         sort: r => `${r["First Name"]} ${r["Last Name"]}`.toLowerCase() },
     { key: "company",      label: "Company",       sort: r => (r["Company"] || "").toLowerCase() },
     { key: "position",     label: "Position",      sort: r => (r["Position_raw"] || r["Position"] || "").toLowerCase() },
-    { key: "connectedOn",  label: "Connected On",  sort: r => r["Connected On"] || "" },
+    { key: "department",   label: "Department",    sort: r => r._department },
     { key: "seniority",    label: "Seniority",     sort: r => r._seniority },
+    { key: "connectedOn",  label: "Connected On",  sort: r => r["Connected On"] || "" },
   ], []);
 
   const handleSort = (key) => {
@@ -252,7 +256,15 @@ export function ConnectionsTable({ data, mlResults }) {
                       </div>
                     )}
                   </td>
-                  <td style={{ padding: "9px 12px", color: C.textDim, whiteSpace: "nowrap" }}>{r["Connected On"]}</td>
+                  <td style={{ padding: "9px 12px", color: C.textDim, fontSize: 11, whiteSpace: "nowrap" }}>
+                    <span style={{
+                      fontSize: 10, padding: "2px 8px", borderRadius: 6,
+                      background: C.surface, color: C.text,
+                      border: `1px solid ${C.border}`, whiteSpace: "nowrap", fontWeight: 500
+                    }}>
+                      {r._department || "Other / Unknown"}
+                    </span>
+                  </td>
                   <td style={{ padding: "9px 12px" }}>
                     <span style={{
                       fontSize: 10, padding: "2px 8px", borderRadius: 99,
@@ -270,6 +282,7 @@ export function ConnectionsTable({ data, mlResults }) {
                       </span>
                     )}
                   </td>
+                  <td style={{ padding: "9px 12px", color: C.textDim, whiteSpace: "nowrap" }}>{r["Connected On"]}</td>
                 </tr>
               );
             })}

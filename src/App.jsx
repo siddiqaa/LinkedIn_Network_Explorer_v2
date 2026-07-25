@@ -5,6 +5,7 @@ import { normalizeData, parseDate, generateSample } from "./utils/dataUtils";
 import { StatCard } from "./components/common/StatCard";
 import { Section } from "./components/common/Section";
 import { EmbeddingSenioritySection } from "./components/overview/EmbeddingSenioritySection";
+import { EmbeddingDepartmentSection } from "./components/overview/EmbeddingDepartmentSection";
 import { TopCompanies } from "./components/overview/TopCompanies";
 import { Heatmap } from "./components/activity/Heatmap";
 import { ConnectionsTable } from "./components/connections/ConnectionsTable";
@@ -129,7 +130,7 @@ export default function App() {
     return { total: data.length, withEmail, companies: companies.size, newest, oldest };
   }, [data]);
 
-  const TABS = ["overview", "activity", "companies", "connections", "seniority classification", "job search"];
+  const TABS = ["overview", "activity", "companies", "connections", "seniority classification", "department classification", "job search"];
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'Syne', sans-serif" }}>
@@ -161,6 +162,19 @@ export default function App() {
                 {dataMeta.isSample ? "Demo mode (sample data saved)" : dataMeta.fileName ? `File: ${dataMeta.fileName}` : "Saved in browser storage"}
               </div>
             </div>
+            <button onClick={loadSample}
+              title="Generate fresh 500 contact sample across NAICS industry sectors"
+              style={{
+                padding: "8px 14px", background: "transparent",
+                border: `1px solid ${C.border}`, borderRadius: 8,
+                color: C.accent2, fontSize: 12, cursor: "pointer", fontFamily: "inherit", fontWeight: 600,
+                transition: "all 0.15s",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = C.accent2; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; }}
+            >
+              🔄 Load 500 Sample
+            </button>
             <button onClick={() => fileRef.current?.click()}
               style={{
                 padding: "8px 16px", background: "transparent",
@@ -222,7 +236,7 @@ export default function App() {
                   onMouseEnter={e => e.currentTarget.style.borderColor = C.accent}
                   onMouseLeave={e => e.currentTarget.style.borderColor = C.border}
                 >
-                  Load sample data
+                  Load 500 Contact Sample
                 </button>
               </div>
             </div>
@@ -272,6 +286,14 @@ export default function App() {
 
             {tab === "seniority classification" && (
               <EmbeddingSenioritySection
+                data={data}
+                mlResults={mlResults}
+                onResultsGenerated={(results) => setMlResults(results)}
+              />
+            )}
+
+            {tab === "department classification" && (
+              <EmbeddingDepartmentSection
                 data={data}
                 mlResults={mlResults}
                 onResultsGenerated={(results) => setMlResults(results)}
