@@ -265,8 +265,8 @@ export default function App() {
             </div>
 
             {tab === "overview" && (
-              <Section title="Top 12 Companies">
-                <TopCompanies data={data} />
+              <Section title="Top Companies & Seniority Cross-Section">
+                <TopCompanies data={data} mlResults={mlResults} />
               </Section>
             )}
 
@@ -288,8 +288,8 @@ export default function App() {
             )}
 
             {tab === "companies" && (
-              <Section title="Top Companies (Extended — top 12)">
-                <TopCompanies data={data} />
+              <Section title="Top Companies & Seniority Cross-Section">
+                <TopCompanies data={data} mlResults={mlResults} />
               </Section>
             )}
 
