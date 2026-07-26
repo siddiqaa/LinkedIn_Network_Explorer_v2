@@ -96,8 +96,11 @@ export function CompanySeniorityMatrix({ data, mlResults }) {
       list.sort((a, b) => a.company.localeCompare(b.company));
     } else if (sortBy === "score") {
       list.sort((a, b) => b.score - a.score);
-    } else {
+    } else if (sortBy === "size" || sortBy === "total") {
       list.sort((a, b) => b.total - a.total);
+    } else {
+      // sortBy is a specific seniority label
+      list.sort((a, b) => (b[sortBy] || 0) - (a[sortBy] || 0));
     }
 
     if (searchFilter.trim()) {
@@ -252,14 +255,47 @@ export function CompanySeniorityMatrix({ data, mlResults }) {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, textAlign: "left" }}>
             <thead>
               <tr style={{ borderBottom: `1px solid ${C.border}`, background: C.surface, position: "sticky", top: 0, zIndex: 10 }}>
-                <th style={{ padding: "12px 16px", color: C.text, fontWeight: 700, minWidth: 180 }}>Company</th>
-                <th style={{ padding: "12px 12px", color: C.accent, fontWeight: 700, textAlign: "center", minWidth: 100 }}>Score</th>
+                <th
+                  onClick={() => setSortBy("alpha")}
+                  style={{ padding: "12px 16px", color: C.text, fontWeight: 700, minWidth: 180, cursor: "pointer", userSelect: "none" }}
+                  title="Sort alphabetically by company name"
+                >
+                  Company {sortBy === "alpha" ? "↓" : ""}
+                </th>
+                <th
+                  onClick={() => setSortBy("score")}
+                  style={{ padding: "12px 12px", color: C.accent, fontWeight: 700, textAlign: "center", minWidth: 100, cursor: "pointer", userSelect: "none" }}
+                  title="Sort by seniority score"
+                >
+                  Score {sortBy === "score" ? "⭐" : ""}
+                </th>
                 {SENIORITY.map(s => (
-                  <th key={s.label} style={{ padding: "12px 10px", color: s.color, fontWeight: 700, textAlign: "center", minWidth: 90, fontSize: 11 }}>
-                    {s.label}
+                  <th
+                    key={s.label}
+                    onClick={() => setSortBy(s.label)}
+                    style={{
+                      padding: "12px 10px",
+                      color: s.color,
+                      fontWeight: 700,
+                      textAlign: "center",
+                      minWidth: 90,
+                      fontSize: 11,
+                      cursor: "pointer",
+                      userSelect: "none",
+                      background: sortBy === s.label ? `${s.color}15` : "transparent"
+                    }}
+                    title={`Sort by ${s.label} count`}
+                  >
+                    {s.label} {sortBy === s.label ? "▼" : ""}
                   </th>
                 ))}
-                <th style={{ padding: "12px 16px", color: C.text, fontWeight: 700, textAlign: "right" }}>Total</th>
+                <th
+                  onClick={() => setSortBy("size")}
+                  style={{ padding: "12px 16px", color: C.text, fontWeight: 700, textAlign: "right", cursor: "pointer", userSelect: "none" }}
+                  title="Sort by total connection count"
+                >
+                  Total {(sortBy === "size" || sortBy === "total") ? "▼" : ""}
+                </th>
               </tr>
             </thead>
             <tbody>
